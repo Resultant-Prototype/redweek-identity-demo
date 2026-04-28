@@ -1,8 +1,49 @@
 // charts.js — shared helpers + Tab 1 Owner Portal charts
 
-// ─── renderChoropleth stub (implemented in Task 7) ───────────────────────────
+// ─── renderChoropleth ─────────────────────────────────────────────────────────
 function renderChoropleth(canvasId, customerSubset, title) {
-  // implemented in Task 7
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const parent = canvas.parentElement;
+  const div = document.createElement('div');
+  div.id = canvasId;
+  div.style.width = '100%';
+  div.style.height = '220px';
+  div.style.position = 'relative';
+  parent.replaceChild(div, canvas);
+
+  const counts = {};
+  customerSubset.filter(c=>c.home_state).forEach(c=>{ counts[c.home_state]=(counts[c.home_state]||0)+1; });
+  const maxVal = Math.max(...Object.values(counts), 1);
+
+  const width = div.clientWidth || 400, height = 220;
+  const projection = d3.geoAlbersUsa().fitSize([width, height], { type:'Sphere' });
+  const path = d3.geoPath().projection(projection);
+  const colorScale = d3.scaleSequentialLog([1, maxVal], [d3.hcl(210,30,95), d3.hcl(220,60,20)]);
+
+  const svg = d3.select(div).append('svg').attr('width',width).attr('height',height);
+
+  fetch('https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json')
+    .then(r=>r.json())
+    .then(us => {
+      const stateNames = {
+        '36':'NY','12':'FL','06':'CA','48':'TX','34':'NJ','09':'CT','25':'MA',
+        '42':'PA','39':'OH','17':'IL','13':'GA','37':'NC','51':'VA','04':'AZ','08':'CO',
+      };
+      svg.append('g').selectAll('path')
+        .data(topojson.feature(us, us.objects.states).features)
+        .join('path')
+        .attr('d', path)
+        .attr('fill', d => {
+          const abbr = stateNames[d.id];
+          return counts[abbr] ? colorScale(counts[abbr]) : '#e8edf4';
+        })
+        .attr('stroke','#fff').attr('stroke-width',0.5)
+        .append('title').text(d => {
+          const abbr = stateNames[d.id];
+          return `${abbr||d.id}: ${(counts[abbr]||0).toLocaleString()} customers`;
+        });
+    });
 }
 
 // ─── Chart registry and shared helpers ───────────────────────────────────────
@@ -478,4 +519,302 @@ function renderResaleCharts(rows) {
 
   // 6. Map
   renderChoropleth('chart-resale-map', CUSTOMERS.filter(c=>c.resale_purchased), 'Resale Activity by State');
+}
+
+// ─── renderIdentityTab ────────────────────────────────────────────────────────
+function renderIdentityTab() {
+  const el = document.getElementById('tab-identity');
+  el.innerHTML = '';
+
+  const banner = document.createElement('div');
+  banner.className = 'match-banner';
+  banner.innerHTML = `
+    <div class="match-headline">${CONFIG.scale.linkedAccounts.toLocaleString()} customers linked across Owner Portal, Rental Marketplace &amp; Resale</div>
+    <div class="match-stats">
+      <span>Match confidence: <strong>${CONFIG.scale.matchConfidence}%</strong></span>
+      <span>Owner-only: <strong>${(CONFIG.scale.ownerOnly/1000).toFixed(0)}K</strong></span>
+      <span>Renter-only: <strong>${(CONFIG.scale.renterOnly/1000).toFixed(0)}K</strong></span>
+      <span>Resale-only: <strong>${(CONFIG.scale.resaleOnly/1000).toFixed(0)}K</strong></span>
+      <span>Traveler ID Rate: <strong>${CONFIG.scale.travelerIdRate}%</strong></span>
+    </div>
+  `;
+  el.appendChild(banner);
+
+  el.innerHTML += `<div class="filter-bar">
+    <div class="filter-group"><label>Resort</label>
+      <select data-filter="resort" data-tab="identity" onchange="handleFilter(this)">
+        <option value="all">All Resorts</option>
+      </select></div>
+    <div class="filter-group"><label>Segment</label>
+      <select data-filter="segment" data-tab="identity" onchange="handleFilter(this)">
+        <option value="all">All Linked</option>
+        <option value="top10">Top 10% CLV</option>
+        <option value="single">Single-Source Only</option>
+      </select></div>
+    <div class="filter-group"><label>Linked Status</label>
+      <select data-filter="linkedStatus" data-tab="identity" onchange="handleFilter(this)">
+        <option value="linked">Linked Only</option>
+        <option value="all">All</option>
+      </select></div>
+    <button class="btn-reset" onclick="resetFilters('identity')">Reset</button>
+    <button class="btn-export" onclick="exportCSV('identity')">Export</button>
+  </div>`;
+
+  const customers = filterCustomers();
+  const linked    = customers.filter(c=>c.global_customer_id);
+  const avgCLV    = linked.length ? Math.round(linked.reduce((s,c)=>s+c.estimated_clv,0)/linked.length) : 0;
+  const ownerRenterOverlap = CUSTOMERS.filter(c=>c.owner_id&&c.renter_id).length;
+  const totalOwners        = CUSTOMERS.filter(c=>c.owner_id).length;
+  const ownerRenterPct     = totalOwners ? Math.round(ownerRenterOverlap/totalOwners*100) : 0;
+  const resaleBuyers       = CUSTOMERS.filter(c=>c.resale_purchased);
+  const rentToBuyPct       = resaleBuyers.length ? Math.round(resaleBuyers.filter(c=>c.prior_renter_flag).length/resaleBuyers.length*100) : 0;
+  const travId             = CONFIG.scale.travelerIdRate;
+
+  const banGrid = document.createElement('div');
+  banGrid.className = 'ban-grid';
+  renderBAN(banGrid, 'Cross-Platform CLV / Linked Customer', `$${avgCLV.toLocaleString()}`, true, 'Avg estimated lifetime value across all linked data sources.');
+  renderBAN(banGrid, 'Owner-to-Renter Overlap',   `${ownerRenterPct}%`);
+  renderBAN(banGrid, 'Rent-to-Buy Conversion',    `${rentToBuyPct}%`);
+  renderBAN(banGrid, 'Traveler ID Rate',           `${travId}%`);
+  renderBAN(banGrid, 'Total Linked Customers',     `${(CONFIG.scale.linkedAccounts/1e6).toFixed(2)}M`);
+  renderBAN(banGrid, 'Avg Match Confidence',       `${CONFIG.scale.matchConfidence}%`);
+  el.appendChild(banGrid);
+
+  // Row 1: Sankey (2/3) + Venn (1/3)
+  const row1 = document.createElement('div');
+  row1.className = 'chart-grid-3col';
+
+  const sankeyCard = document.createElement('div');
+  sankeyCard.className = 'chart-card';
+  sankeyCard.innerHTML = `
+    <div class="chart-title">Rent-to-Buy Conversion Path</div>
+    <div id="chart-identity-sankey" style="width:100%;height:260px;"></div>
+    <div class="sankey-subtitle">18% of eligible renters converted to resale ownership — invisible without identity resolution</div>
+  `;
+  row1.appendChild(sankeyCard);
+
+  const vennCard = document.createElement('div');
+  vennCard.className = 'chart-card';
+  vennCard.innerHTML = `<div class="chart-title">Customer Population Overlap</div><canvas id="chart-identity-venn"></canvas>`;
+  row1.appendChild(vennCard);
+  el.appendChild(row1);
+
+  // Row 2: CLV scatter + Single vs Linked
+  const row2 = document.createElement('div');
+  row2.className = 'chart-grid';
+  ['chart-identity-clv','chart-identity-linked'].forEach(id => {
+    const card = document.createElement('div');
+    card.className = 'chart-card';
+    card.innerHTML = `<canvas id="${id}"></canvas>`;
+    row2.appendChild(card);
+  });
+  el.appendChild(row2);
+
+  // Row 3: geo bar + map
+  const row3 = document.createElement('div');
+  row3.className = 'chart-grid';
+  ['chart-identity-geo','chart-identity-map'].forEach(id => {
+    const card = document.createElement('div');
+    card.className = 'chart-card';
+    card.innerHTML = `<canvas id="${id}"></canvas>`;
+    row3.appendChild(card);
+  });
+  el.appendChild(row3);
+
+  renderIdentityCharts(customers);
+}
+
+// ─── renderIdentityCharts ─────────────────────────────────────────────────────
+function renderIdentityCharts(customers) {
+  // 1. Sankey
+  const sankeyEl = document.getElementById('chart-identity-sankey');
+  sankeyEl.innerHTML = '';
+  const width  = sankeyEl.clientWidth  || 500;
+  const height = sankeyEl.clientHeight || 260;
+
+  const svg = d3.select(sankeyEl).append('svg').attr('width',width).attr('height',height);
+
+  const sankeyLayout = d3.sankey()
+    .nodeWidth(20)
+    .nodePadding(16)
+    .extent([[1,1],[width-1,height-1]]);
+
+  const graph = {
+    nodes: [
+      { name: `All Renters\n${(CONFIG.scale.totalRenters/1000).toFixed(0)}K` },
+      { name: `Researched Resale\n${(CONFIG.scale.sankeyResearched/1000).toFixed(0)}K` },
+      { name: `Made Offer\n${(CONFIG.scale.sankeyOffered/1000).toFixed(0)}K` },
+      { name: `Purchased\n${(CONFIG.scale.renterConvertedResale/1000).toFixed(0)}K` },
+      { name: `Did Not Convert\n${((CONFIG.scale.totalRenters-CONFIG.scale.renterConvertedResale)/1000).toFixed(0)}K` },
+    ],
+    links: [
+      { source:0, target:1, value: CONFIG.scale.sankeyResearched },
+      { source:0, target:4, value: CONFIG.scale.totalRenters - CONFIG.scale.sankeyResearched },
+      { source:1, target:2, value: CONFIG.scale.sankeyOffered },
+      { source:1, target:4, value: CONFIG.scale.sankeyResearched - CONFIG.scale.sankeyOffered },
+      { source:2, target:3, value: CONFIG.scale.renterConvertedResale },
+      { source:2, target:4, value: CONFIG.scale.sankeyOffered - CONFIG.scale.renterConvertedResale },
+    ],
+  };
+
+  sankeyLayout(graph);
+
+  const nodeColors = [CONFIG.palette.navy, CONFIG.palette.blue, CONFIG.palette.blue, CONFIG.palette.teal, CONFIG.palette.gray2];
+
+  svg.append('g').selectAll('rect')
+    .data(graph.nodes).join('rect')
+    .attr('x', d=>d.x0).attr('y', d=>d.y0)
+    .attr('width', d=>d.x1-d.x0).attr('height', d=>d.y1-d.y0)
+    .attr('fill', (_,i)=>nodeColors[i]||CONFIG.palette.slate)
+    .append('title').text(d=>d.name);
+
+  svg.append('g').attr('fill','none').selectAll('path')
+    .data(graph.links).join('path')
+    .attr('d', d3.sankeyLinkHorizontal())
+    .attr('stroke', d => d.target.index===3 ? CONFIG.palette.teal : CONFIG.palette.gray2)
+    .attr('stroke-width', d=>Math.max(1,d.width))
+    .attr('opacity', 0.5)
+    .append('title').text(d=>`${d.source.name} → ${d.target.name}: ${d.value.toLocaleString()}`);
+
+  svg.append('g').style('font','10px sans-serif').selectAll('text')
+    .data(graph.nodes).join('text')
+    .attr('x', d=>d.x0<width/2 ? d.x1+6 : d.x0-6)
+    .attr('y', d=>(d.y1+d.y0)/2).attr('dy','0.35em')
+    .attr('text-anchor', d=>d.x0<width/2?'start':'end')
+    .text(d=>d.name.split('\n')[0])
+    .style('fill', CONFIG.palette.navy).style('font-weight','600');
+
+  // 2. Venn
+  destroyChart('chart-identity-venn');
+  const linkedC = customers.filter(c=>c.global_customer_id);
+  const ownerCount  = linkedC.filter(c=>c.owner_id).length;
+  const renterCount = linkedC.filter(c=>c.renter_id).length;
+  const resaleCount = linkedC.filter(c=>c.resale_id).length;
+  const allThreeCount = linkedC.filter(c=>c.owner_id&&c.renter_id&&c.resale_id).length;
+  _charts['chart-identity-venn'] = new Chart(document.getElementById('chart-identity-venn'), {
+    type: 'venn',
+    data: { datasets:[{
+      label:'Customer Overlap',
+      data:[
+        { sets:['Owner Portal'],         value: ownerCount,  label:`Owner Portal\n${ownerCount}` },
+        { sets:['Rental Marketplace'],   value: renterCount, label:`Rental\n${renterCount}` },
+        { sets:['Resale Marketplace'],   value: resaleCount, label:`Resale\n${resaleCount}` },
+        { sets:['Owner Portal','Rental Marketplace'], value: linkedC.filter(c=>c.owner_id&&c.renter_id).length },
+        { sets:['Owner Portal','Resale Marketplace'], value: linkedC.filter(c=>c.owner_id&&c.resale_id).length },
+        { sets:['Rental Marketplace','Resale Marketplace'], value: linkedC.filter(c=>c.renter_id&&c.resale_id).length },
+        { sets:['Owner Portal','Rental Marketplace','Resale Marketplace'], value: allThreeCount,
+          label:`All Three\n${allThreeCount}\nHighest CLV` },
+      ],
+      backgroundColor:[CONFIG.palette.navy+'88',CONFIG.palette.blue+'88',CONFIG.palette.teal+'88'],
+    }]},
+    options:{
+      responsive: true,
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: (context) => {
+              const sets = context.raw.sets;
+              const subset = CUSTOMERS.filter(c =>
+                sets.every(s =>
+                  s === 'Owner Portal'       ? !!c.owner_id  :
+                  s === 'Rental Marketplace' ? !!c.renter_id :
+                  s === 'Resale Marketplace' ? !!c.resale_id : false
+                )
+              );
+              const avgCLV = subset.length
+                ? Math.round(subset.reduce((s,c)=>s+c.estimated_clv,0)/subset.length)
+                : 0;
+              return `${(context.raw.value||0).toLocaleString()} customers · avg CLV $${avgCLV.toLocaleString()}`;
+            },
+          },
+        },
+      },
+    },
+  });
+
+  // 3. CLV by Segment scatter with tier mean lines
+  destroyChart('chart-identity-clv');
+  const SCATTER_SEGS = ['Owner Only','Renter Only','Resale Only','Owner+Renter','Renter+Buyer','All Three'];
+  const segColors = [CONFIG.palette.gray,CONFIG.palette.gray,CONFIG.palette.gray2,
+                     CONFIG.palette.blue,CONFIG.palette.blue,CONFIG.palette.teal];
+
+  const scatterDatasets = SCATTER_SEGS.map((seg, si) => ({
+    type: 'scatter',
+    label: seg,
+    data: customers.filter(c=>c.customer_segment===seg)
+      .map((c,j) => ({ x: si + ((j%11)-5)*0.055, y: c.estimated_clv })),
+    backgroundColor: segColors[si]+'55',
+    pointRadius: 3,
+    order: 1,
+  }));
+
+  function tierMean(segs) {
+    const sub = customers.filter(c=>segs.includes(c.customer_segment));
+    return sub.length ? Math.round(sub.reduce((s,c)=>s+c.estimated_clv,0)/sub.length) : 0;
+  }
+  const singleMean = tierMean(['Owner Only','Renter Only','Resale Only']);
+  const linkedMean = tierMean(['Owner+Renter','Renter+Buyer','All Three']);
+  const meanDatasets = [
+    { type:'line', label:`Single-source mean $${singleMean.toLocaleString()}`,
+      data:[{x:-0.4,y:singleMean},{x:2.4,y:singleMean}],
+      borderColor:CONFIG.palette.coral, borderWidth:2, borderDash:[6,3], pointRadius:0, order:0 },
+    { type:'line', label:`Linked mean $${linkedMean.toLocaleString()}`,
+      data:[{x:2.6,y:linkedMean},{x:5.4,y:linkedMean}],
+      borderColor:CONFIG.palette.teal, borderWidth:2, borderDash:[6,3], pointRadius:0, order:0 },
+  ];
+
+  _charts['chart-identity-clv'] = new Chart(document.getElementById('chart-identity-clv'), {
+    type: 'scatter',
+    data: { datasets: [...scatterDatasets, ...meanDatasets] },
+    options: {
+      responsive: true,
+      scales: {
+        x: {
+          min: -0.5, max: 5.5,
+          ticks: { stepSize:1, callback: val => SCATTER_SEGS[Math.round(val)] || '' },
+          grid: { display:false },
+        },
+        y: { title:{ display:true, text:'Estimated CLV ($)' } },
+      },
+      plugins: {
+        legend: { display:true, position:'bottom', labels:{ boxWidth:12, font:{size:10} } },
+        title: { display:true, text:'CLV Distribution by Customer Segment' },
+      },
+    },
+  });
+
+  // 4. Single-Source vs Linked by Resort
+  destroyChart('chart-identity-linked');
+  const linkedByResort = {};
+  const singleByResort = {};
+  CUSTOMERS.forEach(c => {
+    const resort = c.owner_resort||c.rental_resort||c.resale_resort;
+    if (!resort) return;
+    if (c.global_customer_id) linkedByResort[resort]=(linkedByResort[resort]||0)+1;
+    else                      singleByResort[resort]=(singleByResort[resort]||0)+1;
+  });
+  _charts['chart-identity-linked'] = new Chart(document.getElementById('chart-identity-linked'), {
+    type:'bar',
+    data:{ labels:CONFIG.resorts,
+      datasets:[
+        { label:'Linked',        data:CONFIG.resorts.map(r=>linkedByResort[r]||0), backgroundColor:CONFIG.palette.teal },
+        { label:'Single-Source', data:CONFIG.resorts.map(r=>singleByResort[r]||0), backgroundColor:CONFIG.palette.gray2 },
+      ]},
+    options:{responsive:true,scales:{x:{stacked:true},y:{stacked:true}}},
+  });
+
+  // 5. Top 10 States geo bar
+  destroyChart('chart-identity-geo');
+  const stateCounts={};
+  customers.filter(c=>c.global_customer_id&&c.home_state).forEach(c=>{stateCounts[c.home_state]=(stateCounts[c.home_state]||0)+1;});
+  const top10 = Object.entries(stateCounts).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  _charts['chart-identity-geo'] = new Chart(document.getElementById('chart-identity-geo'), {
+    type:'bar',
+    data:{ labels:top10.map(([s])=>s), datasets:[{ label:'Linked Customers',
+      data:top10.map(([,v])=>v), backgroundColor:CONFIG.palette.navy }]},
+    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false},title:{display:true,text:'Top 10 States — Linked Customers'}}},
+  });
+
+  // 6. Choropleth
+  renderChoropleth('chart-identity-map', customers.filter(c=>c.global_customer_id), 'Linked Customer Distribution');
 }
