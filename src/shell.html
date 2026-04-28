@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RedWeek — Customer Identity Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-venn@4.3.0/build/index.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
+  <style>{{STYLE}}</style>
+</head>
+<body>
+  <header id="app-header">
+    <div id="logo-area" style="border:none; padding:0;">
+      <span style="color:rgba(255,255,255,.6); font-size:13px; font-weight:600;">RedWeek</span>
+    </div>
+    <span class="org-name">Customer Identity Platform</span>
+  </header>
+
+  <nav id="tab-bar">
+    <button class="tab-btn active" data-tab="owners">Owner Portal</button>
+    <button class="tab-btn" data-tab="rentals">Rental Marketplace</button>
+    <button class="tab-btn" data-tab="resale">Resale Marketplace</button>
+    <button class="tab-btn" data-tab="identity">
+      Customer Identity
+      <span class="p3rl-badge">Powered by P3RL Identity Resolution</span>
+    </button>
+  </nav>
+
+  <main id="app-main">
+    <div id="tab-owners"   class="tab-content active"></div>
+    <div id="tab-rentals"  class="tab-content"></div>
+    <div id="tab-resale"   class="tab-content"></div>
+    <div id="tab-identity" class="tab-content"></div>
+  </main>
+
+  <script>{{SCRIPT}}</script>
+</body>
+</html>
