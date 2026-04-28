@@ -1,0 +1,1465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RedWeek — Customer Identity Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-venn@4.3.0/build/index.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
+  <style>/* ── Resultant Brand Tokens ── */
+    :root {
+      --navy:       #1B2A4A;
+      --teal:       #00A896;
+      --teal-light: #E6F7F5;
+      --white:      #FFFFFF;
+      --gray-50:    #F8F9FA;
+      --gray-100:   #EEF0F3;
+      --gray-200:   #D4D8DF;
+      --gray-600:   #6B7280;
+      --gray-900:   #111827;
+      --accent-red: #D85F52;
+      --font:        'Inter', system-ui, sans-serif;
+      --radius:      6px;
+      --shadow-sm:   0 1px 3px rgba(0,0,0,.08);
+      --shadow-md:   0 4px 12px rgba(0,0,0,.10);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font); background: var(--gray-50); color: var(--gray-900); font-size: 14px; }
+    #app-header {
+      display: flex; align-items: center; gap: 16px;
+      background: var(--navy); color: var(--white);
+      padding: 12px 24px; height: 56px;
+    }
+    #logo-area {
+      border: 2px dashed rgba(255,255,255,.4);
+      padding: 4px 12px; border-radius: var(--radius);
+      font-size: 12px; color: rgba(255,255,255,.7);
+      min-width: 140px; text-align: center;
+    }
+    .org-name { font-size: 16px; font-weight: 600; }
+    #tab-bar {
+      display: flex; gap: 0;
+      background: var(--white);
+      border-bottom: 2px solid var(--gray-200);
+      padding: 0 24px;
+    }
+    .tab-btn {
+      background: none; border: none; cursor: pointer;
+      padding: 14px 20px; font-family: var(--font); font-size: 14px; font-weight: 500;
+      color: var(--gray-600); border-bottom: 3px solid transparent; margin-bottom: -2px;
+      transition: color .15s, border-color .15s;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .tab-btn:hover { color: var(--navy); }
+    .tab-btn.active { color: var(--navy); border-bottom-color: var(--teal); }
+    .p3rl-badge {
+      background: var(--teal); color: var(--white);
+      font-size: 10px; font-weight: 600;
+      padding: 2px 8px; border-radius: 99px;
+      white-space: nowrap;
+    }
+    #app-main { padding: 24px; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .filter-bar {
+      display: flex; align-items: center; flex-wrap: wrap; gap: 12px;
+      background: var(--white); border: 1px solid var(--gray-200);
+      border-radius: var(--radius); padding: 12px 16px;
+      margin-bottom: 20px; box-shadow: var(--shadow-sm);
+    }
+    .filter-group { display: flex; align-items: center; gap: 6px; }
+    .filter-group label { font-size: 12px; font-weight: 600; color: var(--gray-600); white-space: nowrap; }
+    .filter-label { font-size: 12px; font-weight: 600; color: var(--gray-600); white-space: nowrap; }
+    .filter-select {
+      font-family: var(--font); font-size: 13px;
+      border: 1px solid var(--gray-200); border-radius: var(--radius);
+      padding: 6px 10px; background: var(--white); color: var(--gray-900);
+      cursor: pointer; min-width: 140px;
+    }
+    .filter-select:focus { outline: none; border-color: var(--teal); }
+    .btn-reset {
+      margin-left: auto; background: none; border: 1px solid var(--gray-200);
+      border-radius: var(--radius); padding: 6px 14px; font-family: var(--font);
+      font-size: 13px; color: var(--gray-600); cursor: pointer;
+    }
+    .btn-reset:hover { border-color: var(--navy); color: var(--navy); }
+    .btn-export {
+      background: var(--teal); border: none; border-radius: var(--radius);
+      padding: 6px 16px; font-family: var(--font); font-size: 13px;
+      font-weight: 600; color: var(--white); cursor: pointer;
+    }
+    .btn-export:hover { background: #008a7a; }
+    .ban-grid {
+      display: grid; grid-template-columns: repeat(6, 1fr);
+      gap: 16px; margin-bottom: 24px;
+    }
+    .ban-card {
+      background: var(--white); border: 1px solid var(--gray-200);
+      border-radius: var(--radius); padding: 16px 20px;
+      box-shadow: var(--shadow-sm); position: relative;
+      text-align: center;
+    }
+    .ban-card.lead { border-top: 3px solid var(--teal); }
+    .ban-label { font-size: 12px; font-weight: 600; color: var(--gray-600); margin-bottom: 6px; }
+    .ban-value { font-size: 26px; font-weight: 700; color: var(--navy); line-height: 1.1; }
+    .ban-card.lead .ban-value { font-size: 36px; color: var(--teal); }
+    .ban-delta { font-size: 12px; font-weight: 600; margin-top: 4px; }
+    .ban-delta.pos { color: var(--teal); }
+    .ban-delta.neg { color: var(--accent-red); }
+    .ban-tip { font-size: 11px; color: var(--gray-600); cursor: help; }
+    .chart-grid {
+      display: grid; gap: 20px;
+      grid-template-columns: 1fr;
+      margin-bottom: 24px;
+    }
+    .chart-grid-2 { grid-template-columns: 1fr 1fr; }
+    .chart-grid-3 { grid-template-columns: 2fr 1fr; }
+    .chart-grid-3col {
+      display: grid; grid-template-columns: 2fr 1fr;
+      gap: 20px; margin-bottom: 24px;
+    }
+    .chart-card {
+      background: var(--white); border: 1px solid var(--gray-200);
+      border-radius: var(--radius); padding: 20px;
+      box-shadow: var(--shadow-sm);
+    }
+    .chart-title {
+      font-size: 13px; font-weight: 600; color: var(--gray-900);
+      margin-bottom: 14px;
+    }
+    .chart-container { position: relative; }
+    .teaser-box {
+      display: flex; align-items: center; gap: 16px;
+      background: var(--navy); color: var(--white);
+      border-radius: var(--radius); padding: 16px 20px;
+      margin-top: 24px; font-size: 14px; font-weight: 500;
+    }
+    .teaser-icon { font-size: 24px; }
+    .p3rl-teaser {
+      display: flex; align-items: center; gap: 16px;
+      background: var(--navy); color: var(--white);
+      border-radius: var(--radius); padding: 16px 20px;
+      margin-top: 24px;
+    }
+    .p3rl-teaser-icon { font-size: 24px; }
+    .p3rl-teaser-text { font-size: 14px; font-weight: 500; }
+    .match-banner {
+      background: linear-gradient(135deg, var(--navy) 0%, #243b6e 100%);
+      color: var(--white); border-radius: var(--radius);
+      padding: 18px 24px; margin-bottom: 20px;
+      display: flex; flex-wrap: wrap; align-items: center; gap: 24px;
+      box-shadow: var(--shadow-md);
+    }
+    .match-headline { font-size: 20px; font-weight: 700; }
+    .match-headline span { color: var(--teal); }
+    .match-stats { display: flex; gap: 24px; flex-wrap: wrap; }
+    .match-stat { font-size: 13px; color: rgba(255,255,255,.75); }
+    .match-stat strong { color: var(--white); }
+    .sankey-subtitle {
+      font-size: 11px; color: var(--gray-600);
+      text-align: center; margin-top: 8px; font-style: italic;
+    }
+    .chart-info-icon {
+      display: inline-block; margin-left: 6px;
+      font-size: 12px; color: var(--gray-600);
+      cursor: help; vertical-align: middle; line-height: 1;
+    }
+    [data-tooltip] { position: relative; cursor: help; }
+    [data-tooltip]::after {
+      content: attr(data-tooltip);
+      position: absolute; bottom: calc(100% + 6px); left: 50%;
+      transform: translateX(-50%);
+      background: var(--gray-900); color: var(--white);
+      font-size: 11px; font-weight: 400; line-height: 1.4;
+      padding: 6px 10px; border-radius: 4px; white-space: pre-wrap;
+      width: 220px; z-index: 100; pointer-events: none; opacity: 0;
+      transition: opacity .15s;
+    }
+    [data-tooltip]:hover::after { opacity: 1; }
+
+    /* ── Choropleth Map ── */
+    .map-container {
+      position: relative;
+      width: 100%;
+      overflow: hidden;
+    }
+    .map-container svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    .map-tooltip {
+      position: absolute;
+      background: rgba(27,42,74,0.95);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 11px;
+      line-height: 1.7;
+      pointer-events: none;
+      white-space: nowrap;
+      z-index: 200;
+      display: none;
+    }
+    .map-legend {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      position: absolute;
+      bottom: 8px;
+      right: 12px;
+      font-size: 10px;
+      color: var(--gray-600);
+    }
+    .map-legend-bar {
+      width: 80px;
+      height: 8px;
+      border-radius: 2px;
+    }
+</style>
+</head>
+<body>
+  <header id="app-header">
+    <div id="logo-area" style="border:none; padding:0;">
+      <span style="color:rgba(255,255,255,.6); font-size:13px; font-weight:600;">RedWeek</span>
+    </div>
+    <span class="org-name">Customer Identity Platform</span>
+  </header>
+
+  <nav id="tab-bar">
+    <button class="tab-btn active" data-tab="owners">Owner Portal</button>
+    <button class="tab-btn" data-tab="rentals">Rental Marketplace</button>
+    <button class="tab-btn" data-tab="resale">Resale Marketplace</button>
+    <button class="tab-btn" data-tab="identity">
+      Customer Identity
+      <span class="p3rl-badge">Powered by P3RL Identity Resolution</span>
+    </button>
+  </nav>
+
+  <main id="app-main">
+    <div id="tab-owners"   class="tab-content active"></div>
+    <div id="tab-rentals"  class="tab-content"></div>
+    <div id="tab-resale"   class="tab-content"></div>
+    <div id="tab-identity" class="tab-content"></div>
+  </main>
+
+  <script>// ── config.js ──
+const CONFIG = {
+  org: {
+    name: "RedWeek",
+    tagline: "The Timeshare Marketplace",
+  },
+  resorts: [
+    "Palms at Aruba",
+    "Coronado Shores",
+    "Blue Ridge Summit",
+    "Maui Kai",
+    "Sedona Canyon Club",
+  ],
+  regions: ["Caribbean", "Southwest", "Mountain West", "Hawaii"],
+  resortRegionMap: {
+    "Palms at Aruba":     "Caribbean",
+    "Coronado Shores":    "Southwest",
+    "Blue Ridge Summit":  "Mountain West",
+    "Maui Kai":           "Hawaii",
+    "Sedona Canyon Club": "Southwest",
+  },
+  scale: {
+    totalAccounts:         3_100_000,
+    linkedAccounts:        1_860_000,
+    ownerOnly:               340_000,
+    renterOnly:              590_000,
+    resaleOnly:              310_000,
+    allThree:                280_000,
+    totalRenters:            890_000,
+    renterConvertedResale:   160_000,
+    sankeyResearched:        400_000,
+    sankeyOffered:           240_000,
+    travelerIdRate:               73,
+    matchConfidence:              91,
+    sampleSize:                3_000,
+  },
+  palette: {
+    navy:  "#1B2A4A",
+    blue:  "#2E618F",
+    slate: "#5B7FA6",
+    teal:  "#00A896",
+    teal2: "#48CAB2",
+    coral: "#D85F52",
+    gray:  "#8B96A5",
+    gray2: "#C5CBD4",
+  },
+  p3rl: {
+    badgeLabel: "Powered by P3RL Identity Resolution",
+  },
+};
+
+
+// ── data.js ──
+function deterministicVariance(dateStr, resort, salt = 0) {
+  let hash = 0;
+  const str = dateStr + resort + salt;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return (Math.abs(hash) % 1000) / 1000;
+}
+
+const START_DATE = new Date('2025-01-01');
+const END_DATE   = new Date('2025-12-31');
+
+function dateRange() {
+  const dates = [];
+  for (let d = new Date(START_DATE); d <= END_DATE; d.setDate(d.getDate() + 1)) {
+    dates.push(new Date(d).toISOString().slice(0, 10));
+  }
+  return dates;
+}
+const DATES = dateRange();
+
+const DAILY_OWNERS = [];
+for (const date of DATES) {
+  for (const resort of CONFIG.resorts) {
+    const v = deterministicVariance(date, resort, 1);
+    const v2 = deterministicVariance(date, resort, 2);
+    const active = Math.round(180 + v * 120);
+    DAILY_OWNERS.push({
+      date, resort,
+      active_listings:    active,
+      new_listings:       Math.round(3 + v * 8),
+      delistings:         Math.round(1 + v2 * 5),
+      price_reductions:   Math.round(active * (0.05 + v2 * 0.08)),
+      avg_listing_price:  Math.round(8000 + v * 12000),
+      avg_maintenance_fee: Math.round(1400 + v * 600),
+      verified_listings:  Math.round(active * (0.55 + v * 0.25)),
+      avg_days_listed:    Math.round(45 + v2 * 60),
+      distress_flagged:   Math.round(active * (0.08 + v2 * 0.12)),
+    });
+  }
+}
+
+const DAILY_RENTALS = [];
+for (const date of DATES) {
+  for (const resort of CONFIG.resorts) {
+    const v = deterministicVariance(date, resort, 3);
+    const v2 = deterministicVariance(date, resort, 4);
+    const inquiries = Math.round(40 + v * 80);
+    const bookings  = Math.round(inquiries * (0.18 + v2 * 0.14));
+    const completed = Math.round(bookings * (0.85 + v * 0.12));
+    DAILY_RENTALS.push({
+      date, resort,
+      inquiries,
+      bookings,
+      completed_rentals: completed,
+      cancellations:     bookings - completed,
+      rental_gmv:        Math.round(completed * (1800 + v * 1200)),
+      avg_booking_value: Math.round(1800 + v * 1200),
+      avg_lead_time_days: Math.round(14 + v2 * 30),
+      traveler_id_rate:  Math.round(60 + v * 25),
+    });
+  }
+}
+
+const DAILY_RESALE = [];
+for (const date of DATES) {
+  for (const resort of CONFIG.resorts) {
+    const v = deterministicVariance(date, resort, 5);
+    const v2 = deterministicVariance(date, resort, 6);
+    const inquiries = Math.round(8 + v * 20);
+    const offers    = Math.round(inquiries * (0.25 + v2 * 0.15));
+    const sales     = Math.round(offers * (0.4 + v * 0.25));
+    DAILY_RESALE.push({
+      date, resort,
+      resale_inquiries:      inquiries,
+      offers_made:           offers,
+      completed_sales:       sales,
+      resale_gmv:            Math.round(sales * (9000 + v * 14000)),
+      avg_sale_price:        Math.round(9000 + v * 14000),
+      avg_days_on_market:    Math.round(55 + v2 * 80),
+      avg_discount_to_market: -(Math.round(5 + v * 25)),
+    });
+  }
+}
+
+const SEGMENT_COUNTS = {
+  'All Three':           270,
+  'Owner+Renter':        540,
+  'Renter+Buyer':        600,
+  'Owner+Resale':        390,
+  'Owner Only':          330,
+  'Renter Only':         570,
+  'Resale Only':         300,
+};
+
+const US_STATES = ['NY','FL','CA','TX','NJ','CT','MA','PA','OH','IL','GA','NC','VA','AZ','CO'];
+const STATE_WEIGHTS = [25,12,10,8,6,5,5,4,4,3,3,3,3,3,3];
+
+function weightedState(v) {
+  const total = STATE_WEIGHTS.reduce((a,b) => a+b, 0);
+  let cumulative = 0;
+  const r = v * total;
+  for (let i = 0; i < US_STATES.length; i++) {
+    cumulative += STATE_WEIGHTS[i];
+    if (r <= cumulative) return US_STATES[i];
+  }
+  return US_STATES[0];
+}
+
+const CUSTOMERS = [];
+let idx = 0;
+for (const [segment, count] of Object.entries(SEGMENT_COUNTS)) {
+  for (let i = 0; i < count; i++, idx++) {
+    const v  = deterministicVariance(String(idx), segment, 10);
+    const v2 = deterministicVariance(String(idx), segment, 11);
+    const v3 = deterministicVariance(String(idx), segment, 12);
+
+    const hasOwner  = ['All Three','Owner+Renter','Owner+Resale','Owner Only'].includes(segment);
+    const hasRenter = ['All Three','Owner+Renter','Renter+Buyer','Renter Only'].includes(segment);
+    const hasResale = ['All Three','Renter+Buyer','Owner+Resale','Resale Only'].includes(segment);
+    const isLinked  = segment !== 'Owner Only' && segment !== 'Renter Only' && segment !== 'Resale Only';
+
+    const ownerResort  = hasOwner  ? CONFIG.resorts[Math.floor(v  * CONFIG.resorts.length)] : null;
+    const renterResort = hasRenter ? CONFIG.resorts[Math.floor(v2 * CONFIG.resorts.length)] : null;
+    const resaleResort = hasResale ? CONFIG.resorts[Math.floor(v3 * CONFIG.resorts.length)] : null;
+
+    const priorRenterFlag = hasResale && hasRenter;
+    const rentToBuyMonths = priorRenterFlag ? Math.round(3 + v * 33) : null;
+
+    const rentalSpend = hasRenter ? Math.round(1800 + v2 * 4200) : 0;
+    const ownerValue  = hasOwner  ? Math.round(5000 + v  * 15000) : 0;
+    const resalePrice = hasResale ? Math.round(8000 + v3 * 16000) : 0;
+    const estimatedClv = Math.round((rentalSpend + ownerValue * 0.3 + resalePrice * 0.2) * (isLinked ? 1.4 : 1));
+
+    const linkedSources = [
+      hasOwner  ? 'OWNER'  : null,
+      hasRenter ? 'RENTAL' : null,
+      hasResale ? 'RESALE' : null,
+    ].filter(Boolean).join('|');
+
+    CUSTOMERS.push({
+      global_customer_id:     isLinked  ? `GC-${String(idx).padStart(6,'0')}` : null,
+      owner_id:               hasOwner  ? `OWN-${String(idx).padStart(6,'0')}` : null,
+      renter_id:              hasRenter ? `RNT-${String(idx).padStart(6,'0')}` : null,
+      resale_id:              hasResale ? `RSL-${String(idx).padStart(6,'0')}` : null,
+      linked_sources:         linkedSources,
+      match_confidence_score: isLinked  ? Math.round((0.85 + v * 0.14) * 100) / 100 : null,
+      owner_listings:         hasOwner  ? Math.round(1 + v * 4)   : null,
+      owner_avg_price:        hasOwner  ? Math.round(8000 + v * 12000) : null,
+      owner_resort:           ownerResort,
+      owner_distress_score:   hasOwner  ? Math.round(v2 * 80)     : null,
+      owner_type:             hasOwner  ? (['individual','individual','individual','portfolio','broker'][Math.floor(v3 * 5)]) : null,
+      rental_bookings:        hasRenter ? Math.round(1 + v2 * 8)  : null,
+      rental_total_spend:     hasRenter ? rentalSpend              : null,
+      rental_resort:          renterResort,
+      rental_repeat_flag:     hasRenter ? (v2 > 0.35)             : null,
+      rental_same_resort_repeat: hasRenter ? (v2 > 0.55)          : null,
+      resale_purchased:       hasResale,
+      resale_price:           hasResale ? resalePrice              : null,
+      resale_resort:          resaleResort,
+      prior_renter_flag:      priorRenterFlag,
+      rent_to_buy_months:     rentToBuyMonths,
+      estimated_clv:          estimatedClv,
+      home_state:             weightedState(v),
+      customer_segment:       segment,
+    });
+  }
+}
+
+
+// ── filters.js ──
+const STATE = {
+  owners: {
+    resort: 'all',
+    dateRange: 'year',
+    ownerType: 'all',
+    listingStatus: 'all',
+  },
+  rentals: {
+    resort: 'all',
+    dateRange: 'year',
+    bookingStatus: 'all',
+    travelerType: 'all',
+  },
+  resale: {
+    resort: 'all',
+    dateRange: 'year',
+    buyerType: 'all',
+    saleStatus: 'all',
+  },
+  identity: {
+    resort: 'all',
+    dateRange: 'year',
+    segment: 'all',
+    linkedStatus: 'linked',
+  },
+};
+
+const DATE_PRESETS = {
+  year: () => ({ start: new Date('2025-01-01'), end: new Date('2025-12-31') }),
+  '90': () => {
+    const end = new Date('2025-12-31');
+    const start = new Date(end);
+    start.setDate(start.getDate() - 90);
+    return { start, end };
+  },
+  '30': () => {
+    const end = new Date('2025-12-31');
+    const start = new Date(end);
+    start.setDate(start.getDate() - 30);
+    return { start, end };
+  },
+};
+
+function getDateWindow(dateRange) {
+  return (DATE_PRESETS[dateRange] || DATE_PRESETS.year)();
+}
+
+function filterDaily(dataset, tab) {
+  const s = STATE[tab];
+  const { start, end } = getDateWindow(s.dateRange);
+  return dataset.filter(row => {
+    const d = new Date(row.date);
+    if (d < start || d > end) return false;
+    if (s.resort !== 'all' && row.resort !== s.resort) return false;
+    return true;
+  });
+}
+
+function filterCustomers() {
+  const s = STATE.identity;
+  return CUSTOMERS.filter(c => {
+    if (s.linkedStatus === 'linked' && !c.global_customer_id) return false;
+    if (s.segment === 'top10') {
+      const threshold = getTop10Threshold();
+      return c.estimated_clv >= threshold;
+    }
+    if (s.segment === 'single') return !c.global_customer_id;
+    return true;
+  });
+}
+
+function getTop10Threshold() {
+  const clvs = CUSTOMERS.filter(c => c.global_customer_id)
+    .map(c => c.estimated_clv)
+    .sort((a, b) => b - a);
+  return clvs[Math.floor(clvs.length * 0.1)] || 0;
+}
+
+const fmt = {
+  currency: n => '$' + (n >= 1_000_000 ? (n/1_000_000).toFixed(1)+'M' : n >= 1000 ? (n/1000).toFixed(0)+'K' : n.toFixed(0)),
+  pct:      n => (n * 100).toFixed(1) + '%',
+  num:      n => n >= 1000 ? (n/1000).toFixed(1)+'K' : String(n),
+};
+
+
+// ── charts.js ──
+// charts.js — shared helpers + Tab 1 Owner Portal charts
+
+// ─── renderChoropleth ─────────────────────────────────────────────────────────
+function renderChoropleth(canvasId, customerSubset, title) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const parent = canvas.parentElement;
+  const div = document.createElement('div');
+  div.id = canvasId;
+  div.style.width = '100%';
+  div.style.height = '220px';
+  div.style.position = 'relative';
+  parent.replaceChild(div, canvas);
+
+  const counts = {};
+  customerSubset.filter(c=>c.home_state).forEach(c=>{ counts[c.home_state]=(counts[c.home_state]||0)+1; });
+  const maxVal = Math.max(...Object.values(counts), 1);
+
+  const width = div.clientWidth || 400, height = 220;
+  const projection = d3.geoAlbersUsa().fitSize([width, height], { type:'Sphere' });
+  const path = d3.geoPath().projection(projection);
+  const colorScale = d3.scaleSequentialLog([1, maxVal], [d3.hcl(210,30,95), d3.hcl(220,60,20)]);
+
+  const svg = d3.select(div).append('svg').attr('width',width).attr('height',height);
+
+  fetch('https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json')
+    .then(r=>r.json())
+    .then(us => {
+      const stateNames = {
+        '36':'NY','12':'FL','06':'CA','48':'TX','34':'NJ','09':'CT','25':'MA',
+        '42':'PA','39':'OH','17':'IL','13':'GA','37':'NC','51':'VA','04':'AZ','08':'CO',
+      };
+      svg.append('g').selectAll('path')
+        .data(topojson.feature(us, us.objects.states).features)
+        .join('path')
+        .attr('d', path)
+        .attr('fill', d => {
+          const abbr = stateNames[d.id];
+          return counts[abbr] ? colorScale(counts[abbr]) : '#e8edf4';
+        })
+        .attr('stroke','#fff').attr('stroke-width',0.5)
+        .append('title').text(d => {
+          const abbr = stateNames[d.id];
+          return `${abbr||d.id}: ${(counts[abbr]||0).toLocaleString()} customers`;
+        });
+    });
+}
+
+// ─── Chart registry and shared helpers ───────────────────────────────────────
+const _charts = {};
+function destroyChart(id) {
+  if (_charts[id]) { _charts[id].destroy(); delete _charts[id]; }
+}
+
+function renderBAN(container, label, value, isLead = false, tooltip = '') {
+  const card = document.createElement('div');
+  card.className = 'ban-card' + (isLead ? ' lead' : '');
+  card.innerHTML = `
+    <div class="ban-label">${label}${tooltip ? ` <span class="ban-tip" title="${tooltip}">ⓘ</span>` : ''}</div>
+    <div class="ban-value">${value}</div>
+  `;
+  container.appendChild(card);
+}
+
+function renderTeaserBox(container, text) {
+  const box = document.createElement('div');
+  box.className = 'teaser-box';
+  box.innerHTML = `<span class="teaser-icon">🔒</span> ${text}`;
+  container.appendChild(box);
+}
+
+// ─── renderOwnersTab ──────────────────────────────────────────────────────────
+function renderOwnersTab() {
+  const el = document.getElementById('tab-owners');
+  el.innerHTML = '';
+
+  el.innerHTML += `
+    <div class="filter-bar">
+      <div class="filter-group">
+        <label>Resort</label>
+        <select data-filter="resort" data-tab="owners" onchange="handleFilter(this)">
+          <option value="all">All Resorts</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Date Range</label>
+        <select data-filter="dateRange" data-tab="owners" onchange="handleFilter(this)">
+          <option value="year">Full Year</option>
+          <option value="90">Last 90 Days</option>
+          <option value="30">Last 30 Days</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Owner Type</label>
+        <select data-filter="ownerType" data-tab="owners" onchange="handleFilter(this)">
+          <option value="all">All Types</option>
+          <option value="individual">Individual</option>
+          <option value="portfolio">Portfolio</option>
+          <option value="broker">Broker</option>
+        </select>
+      </div>
+      <button class="btn-reset" onclick="resetFilters('owners')">Reset</button>
+      <button class="btn-export" onclick="exportCSV('owners')">Export</button>
+    </div>
+  `;
+
+  const rows = filterDaily(DAILY_OWNERS, 'owners');
+  const avgActive   = rows.length ? Math.round(rows.reduce((s,r) => s + r.active_listings, 0) / rows.length) : 0;
+  const avgDays     = rows.length ? Math.round(rows.reduce((s,r) => s + r.avg_days_listed, 0) / rows.length) : 0;
+  const avgVerified = rows.length ? Math.round(rows.reduce((s,r) => s + r.verified_listings / r.active_listings, 0) / rows.length * 100) : 0;
+  const avgFee      = rows.length ? Math.round(rows.reduce((s,r) => s + r.avg_maintenance_fee, 0) / rows.length) : 0;
+  const avgPriceRed = rows.length ? Math.round(rows.reduce((s,r) => s + r.price_reductions / r.active_listings, 0) / rows.length * 100) : 0;
+  const avgDistress = rows.length ? Math.round(rows.reduce((s,r) => s + r.distress_flagged, 0) / rows.length) : 0;
+
+  const banGrid = document.createElement('div');
+  banGrid.className = 'ban-grid';
+  renderBAN(banGrid, 'Active Listings',           avgActive.toLocaleString());
+  renderBAN(banGrid, 'Avg Days to Rent',           `${avgDays}d`);
+  renderBAN(banGrid, 'Verified Listing Share',     `${avgVerified}%`);
+  renderBAN(banGrid, 'Avg Maintenance Fee',        `$${avgFee.toLocaleString()}`);
+  renderBAN(banGrid, 'Price Reduction Rate',       `${avgPriceRed}%`);
+  renderBAN(banGrid, 'Distress-Flagged (avg/day)', avgDistress.toLocaleString());
+  el.appendChild(banGrid);
+
+  const grid = document.createElement('div');
+  grid.className = 'chart-grid';
+  ['chart-owners-timeline','chart-owners-type','chart-owners-time-to-rent',
+   'chart-owners-price-reductions','chart-owners-fees','chart-owners-map'].forEach(id => {
+    const card = document.createElement('div');
+    card.className = 'chart-card';
+    card.innerHTML = `<canvas id="${id}"></canvas>`;
+    grid.appendChild(card);
+  });
+  el.appendChild(grid);
+
+  renderTeaserBox(el, `Whether an owner is also renting other resorts, purchasing resale, or in financial distress isn't visible from listing data alone. See <strong>Customer Identity</strong> tab.`);
+
+  renderOwnersCharts(rows);
+}
+
+// ─── renderOwnersCharts ───────────────────────────────────────────────────────
+function renderOwnersCharts(rows) {
+  // 1. Active Listings Over Time
+  destroyChart('chart-owners-timeline');
+  const byDate = {};
+  rows.forEach(r => { byDate[r.date] = (byDate[r.date] || 0) + r.active_listings; });
+  const dates = Object.keys(byDate).sort();
+  _charts['chart-owners-timeline'] = new Chart(
+    document.getElementById('chart-owners-timeline'), {
+      type: 'line',
+      data: {
+        labels: dates.filter((_,i) => i % 7 === 0),
+        datasets: [{
+          label: 'Active Listings',
+          data: dates.filter((_,i) => i % 7 === 0).map(d => byDate[d]),
+          borderColor: CONFIG.palette.navy,
+          backgroundColor: CONFIG.palette.navy + '18',
+          fill: true, tension: 0.3, pointRadius: 0,
+        }],
+      },
+      options: { responsive: true, plugins: { legend: { display: false } } },
+    }
+  );
+
+  // 2. Listings by Owner Type
+  destroyChart('chart-owners-type');
+  const typeCounts = { individual: 0, portfolio: 0, broker: 0 };
+  CUSTOMERS.filter(c => c.owner_type).forEach(c => { typeCounts[c.owner_type]++; });
+  _charts['chart-owners-type'] = new Chart(
+    document.getElementById('chart-owners-type'), {
+      type: 'bar',
+      data: {
+        labels: ['Individual','Portfolio','Broker'],
+        datasets: [{
+          data: [typeCounts.individual, typeCounts.portfolio, typeCounts.broker],
+          backgroundColor: [CONFIG.palette.navy, CONFIG.palette.blue, CONFIG.palette.slate],
+        }],
+      },
+      options: { responsive: true, plugins: { legend: { display: false } } },
+    }
+  );
+
+  // 3. Time to Rent by Resort
+  destroyChart('chart-owners-time-to-rent');
+  const byResort = {};
+  rows.forEach(r => {
+    if (!byResort[r.resort]) byResort[r.resort] = [];
+    byResort[r.resort].push(r.avg_days_listed);
+  });
+  const resortLabels = CONFIG.resorts;
+  const resortAvgs = resortLabels.map(r => byResort[r] ? Math.round(byResort[r].reduce((a,b)=>a+b,0)/byResort[r].length) : 0);
+  _charts['chart-owners-time-to-rent'] = new Chart(
+    document.getElementById('chart-owners-time-to-rent'), {
+      type: 'bar',
+      data: {
+        labels: resortLabels,
+        datasets: [{ label: 'Avg Days Listed', data: resortAvgs, backgroundColor: CONFIG.palette.blue }],
+      },
+      options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } } },
+    }
+  );
+
+  // 4. Price Reduction Frequency by Listing Age
+  destroyChart('chart-owners-price-reductions');
+  const buckets = ['0–30d','31–60d','61–90d','90+d'];
+  const bucketData = [0,0,0,0];
+  rows.forEach(r => {
+    const idx = r.avg_days_listed <= 30 ? 0 : r.avg_days_listed <= 60 ? 1 : r.avg_days_listed <= 90 ? 2 : 3;
+    bucketData[idx] += r.price_reductions;
+  });
+  _charts['chart-owners-price-reductions'] = new Chart(
+    document.getElementById('chart-owners-price-reductions'), {
+      type: 'bar',
+      data: {
+        labels: buckets,
+        datasets: [{ label: 'Price Reductions', data: bucketData, backgroundColor: CONFIG.palette.coral }],
+      },
+      options: { responsive: true, plugins: { legend: { display: false } } },
+    }
+  );
+
+  // 5. Maintenance Fee by Resort
+  destroyChart('chart-owners-fees');
+  const feeByResort = resortLabels.map(r => {
+    const subset = rows.filter(row => row.resort === r);
+    return subset.length ? Math.round(subset.reduce((s,row)=>s+row.avg_maintenance_fee,0)/subset.length) : 0;
+  });
+  _charts['chart-owners-fees'] = new Chart(
+    document.getElementById('chart-owners-fees'), {
+      type: 'bar',
+      data: {
+        labels: resortLabels,
+        datasets: [{ label: 'Avg Maintenance Fee ($)', data: feeByResort, backgroundColor: CONFIG.palette.slate }],
+      },
+      options: { responsive: true, plugins: { legend: { display: false } } },
+    }
+  );
+
+  // 6. Choropleth (stub called — implemented in Task 7)
+  renderChoropleth('chart-owners-map', CUSTOMERS.filter(c => c.owner_id), 'Owner Activity by State');
+}
+
+// ─── renderRentalsTab ─────────────────────────────────────────────────────────
+function renderRentalsTab() {
+  const el = document.getElementById('tab-rentals');
+  el.innerHTML = '';
+
+  el.innerHTML += `<div class="filter-bar">
+    <div class="filter-group"><label>Resort</label>
+      <select data-filter="resort" data-tab="rentals" onchange="handleFilter(this)">
+        <option value="all">All Resorts</option>
+      </select></div>
+    <div class="filter-group"><label>Date Range</label>
+      <select data-filter="dateRange" data-tab="rentals" onchange="handleFilter(this)">
+        <option value="year">Full Year</option><option value="90">Last 90 Days</option><option value="30">Last 30 Days</option>
+      </select></div>
+    <button class="btn-reset" onclick="resetFilters('rentals')">Reset</button>
+    <button class="btn-export" onclick="exportCSV('rentals')">Export</button>
+  </div>`;
+
+  const rows = filterDaily(DAILY_RENTALS, 'rentals');
+  const totalGMV    = rows.reduce((s,r) => s + r.rental_gmv, 0);
+  const totalInq    = rows.reduce((s,r) => s + r.inquiries, 0);
+  const totalBook   = rows.reduce((s,r) => s + r.bookings, 0);
+  const totalCancel = rows.reduce((s,r) => s + r.cancellations, 0);
+  const inqToBook   = totalInq ? Math.round(totalBook / totalInq * 100) : 0;
+  const cancelRate  = totalBook ? Math.round(totalCancel / totalBook * 100) : 0;
+  const avgLead     = rows.length ? Math.round(rows.reduce((s,r)=>s+r.avg_lead_time_days,0)/rows.length) : 0;
+  const avgTravId   = rows.length ? Math.round(rows.reduce((s,r)=>s+r.traveler_id_rate,0)/rows.length) : 0;
+  const repeatRate  = Math.round(CUSTOMERS.filter(c=>c.rental_repeat_flag).length / CUSTOMERS.filter(c=>c.renter_id).length * 100);
+
+  const banGrid = document.createElement('div');
+  banGrid.className = 'ban-grid';
+  renderBAN(banGrid, 'Total Rental GMV',         `$${(totalGMV/1e6).toFixed(1)}M`);
+  renderBAN(banGrid, 'Inquiry-to-Booking Rate',  `${inqToBook}%`);
+  renderBAN(banGrid, 'Repeat Renter Rate',        `${repeatRate}%`);
+  renderBAN(banGrid, 'Cancellation Rate',         `${cancelRate}%`);
+  renderBAN(banGrid, 'Avg Lead Time',             `${avgLead}d`);
+  renderBAN(banGrid, 'Ultimate Traveler ID Rate', `${avgTravId}%`, true, 'Bookings where end traveler identity was confirmed vs. total bookings.');
+  el.appendChild(banGrid);
+
+  const grid = document.createElement('div');
+  grid.className = 'chart-grid';
+  ['chart-rentals-timeline','chart-rentals-funnel','chart-rentals-repeat',
+   'chart-rentals-value','chart-rentals-cancel','chart-rentals-map'].forEach(id => {
+    const card = document.createElement('div');
+    card.className = 'chart-card';
+    card.innerHTML = `<canvas id="${id}"></canvas>`;
+    grid.appendChild(card);
+  });
+  el.appendChild(grid);
+
+  renderTeaserBox(el, `Whether a renter comes back, books the same resort twice, or converts to ownership — none of that is visible from rental data alone. See <strong>Customer Identity</strong> tab.`);
+  renderRentalsCharts(rows);
+}
+
+// ─── renderRentalsCharts ──────────────────────────────────────────────────────
+function renderRentalsCharts(rows) {
+  // 1. Bookings Over Time
+  destroyChart('chart-rentals-timeline');
+  const byDate = {};
+  rows.forEach(r => { byDate[r.date] = (byDate[r.date]||0) + r.completed_rentals; });
+  const dates = Object.keys(byDate).sort();
+  _charts['chart-rentals-timeline'] = new Chart(document.getElementById('chart-rentals-timeline'), {
+    type: 'line',
+    data: { labels: dates.filter((_,i)=>i%7===0),
+      datasets: [{ label: 'Completed Rentals', data: dates.filter((_,i)=>i%7===0).map(d=>byDate[d]),
+        borderColor: CONFIG.palette.blue, backgroundColor: CONFIG.palette.blue+'18', fill:true, tension:0.3, pointRadius:0 }] },
+    options: { responsive:true, plugins:{ legend:{ display:false } } },
+  });
+
+  // 2. Inquiry→Booking Funnel by Resort
+  destroyChart('chart-rentals-funnel');
+  const byResort = {};
+  rows.forEach(r => {
+    if (!byResort[r.resort]) byResort[r.resort] = { inq:0, book:0 };
+    byResort[r.resort].inq  += r.inquiries;
+    byResort[r.resort].book += r.completed_rentals;
+  });
+  _charts['chart-rentals-funnel'] = new Chart(document.getElementById('chart-rentals-funnel'), {
+    type: 'bar',
+    data: { labels: CONFIG.resorts,
+      datasets: [
+        { label:'Inquiries',         data: CONFIG.resorts.map(r=>byResort[r]?.inq||0),  backgroundColor: CONFIG.palette.gray2 },
+        { label:'Completed Rentals', data: CONFIG.resorts.map(r=>byResort[r]?.book||0), backgroundColor: CONFIG.palette.blue },
+      ] },
+    options: { responsive:true, indexAxis:'y' },
+  });
+
+  // 3. Repeat vs First-Time Renters by Resort
+  destroyChart('chart-rentals-repeat');
+  const repeatByResort = {};
+  const firstByResort  = {};
+  CUSTOMERS.filter(c=>c.rental_resort).forEach(c => {
+    if (c.rental_repeat_flag) repeatByResort[c.rental_resort] = (repeatByResort[c.rental_resort]||0)+1;
+    else                      firstByResort[c.rental_resort]  = (firstByResort[c.rental_resort]||0)+1;
+  });
+  _charts['chart-rentals-repeat'] = new Chart(document.getElementById('chart-rentals-repeat'), {
+    type:'bar',
+    data:{ labels: CONFIG.resorts,
+      datasets:[
+        { label:'Repeat',     data: CONFIG.resorts.map(r=>repeatByResort[r]||0), backgroundColor: CONFIG.palette.navy },
+        { label:'First-Time', data: CONFIG.resorts.map(r=>firstByResort[r]||0),  backgroundColor: CONFIG.palette.gray2 },
+      ] },
+    options:{ responsive:true },
+  });
+
+  // 4. Avg Booking Value by Resort
+  destroyChart('chart-rentals-value');
+  const valueByResort = {};
+  rows.forEach(r => {
+    if (!valueByResort[r.resort]) valueByResort[r.resort] = [];
+    valueByResort[r.resort].push(r.avg_booking_value);
+  });
+  _charts['chart-rentals-value'] = new Chart(document.getElementById('chart-rentals-value'), {
+    type:'bar',
+    data:{ labels: CONFIG.resorts,
+      datasets:[{ label:'Avg Booking Value ($)',
+        data: CONFIG.resorts.map(r => valueByResort[r] ? Math.round(valueByResort[r].reduce((a,b)=>a+b,0)/valueByResort[r].length) : 0),
+        backgroundColor: CONFIG.palette.teal }] },
+    options:{ responsive:true, plugins:{ legend:{ display:false } } },
+  });
+
+  // 5. Cancellation Rate by Lead Time bucket
+  destroyChart('chart-rentals-cancel');
+  const ltBuckets = ['0–7d','8–14d','15–30d','31–60d','60+d'];
+  const ltCancel  = [0,0,0,0,0];
+  const ltTotal   = [0,0,0,0,0];
+  rows.forEach(r => {
+    const i = r.avg_lead_time_days<=7?0:r.avg_lead_time_days<=14?1:r.avg_lead_time_days<=30?2:r.avg_lead_time_days<=60?3:4;
+    ltCancel[i]+=r.cancellations; ltTotal[i]+=r.bookings;
+  });
+  _charts['chart-rentals-cancel'] = new Chart(document.getElementById('chart-rentals-cancel'), {
+    type:'bar',
+    data:{ labels: ltBuckets,
+      datasets:[{ label:'Cancel Rate %',
+        data: ltBuckets.map((_,i)=>ltTotal[i]?Math.round(ltCancel[i]/ltTotal[i]*100):0),
+        backgroundColor: CONFIG.palette.coral }] },
+    options:{ responsive:true, plugins:{ legend:{ display:false } } },
+  });
+
+  // 6. Map
+  renderChoropleth('chart-rentals-map', CUSTOMERS.filter(c=>c.renter_id), 'Renter Origin by State');
+}
+
+// ─── renderResaleTab ──────────────────────────────────────────────────────────
+function renderResaleTab() {
+  const el = document.getElementById('tab-resale');
+  el.innerHTML = '';
+
+  el.innerHTML += `<div class="filter-bar">
+    <div class="filter-group"><label>Resort</label>
+      <select data-filter="resort" data-tab="resale" onchange="handleFilter(this)">
+        <option value="all">All Resorts</option>
+      </select></div>
+    <div class="filter-group"><label>Date Range</label>
+      <select data-filter="dateRange" data-tab="resale" onchange="handleFilter(this)">
+        <option value="year">Full Year</option><option value="90">Last 90</option><option value="30">Last 30</option>
+      </select></div>
+    <button class="btn-reset" onclick="resetFilters('resale')">Reset</button>
+    <button class="btn-export" onclick="exportCSV('resale')">Export</button>
+  </div>`;
+
+  const rows = filterDaily(DAILY_RESALE, 'resale');
+  const totalGMV    = rows.reduce((s,r)=>s+r.resale_gmv,0);
+  const totalInq    = rows.reduce((s,r)=>s+r.resale_inquiries,0);
+  const totalSales  = rows.reduce((s,r)=>s+r.completed_sales,0);
+  const convRate    = totalInq ? Math.round(totalSales/totalInq*100) : 0;
+  const avgDOM      = rows.length ? Math.round(rows.reduce((s,r)=>s+r.avg_days_on_market,0)/rows.length) : 0;
+  const avgDiscount = rows.length ? Math.round(rows.reduce((s,r)=>s+r.avg_discount_to_market,0)/rows.length) : 0;
+  const resaleBuyers = CUSTOMERS.filter(c=>c.resale_purchased);
+  const priorRenterShare = resaleBuyers.length ? Math.round(resaleBuyers.filter(c=>c.prior_renter_flag).length/resaleBuyers.length*100) : 0;
+  const liquidityIndex = totalSales && rows.length ? Math.round(totalSales / rows.length * 10) / 10 : 0;
+
+  const banGrid = document.createElement('div');
+  banGrid.className = 'ban-grid';
+  renderBAN(banGrid, 'Total Resale GMV',       `$${(totalGMV/1e6).toFixed(1)}M`);
+  renderBAN(banGrid, 'Resale Conversion Rate', `${convRate}%`);
+  renderBAN(banGrid, 'Avg Days on Market',     `${avgDOM}d`);
+  renderBAN(banGrid, 'Avg Discount to Market', `${avgDiscount}%`);
+  renderBAN(banGrid, 'Prior Renter Share',     `${priorRenterShare}%`, true, 'Resale buyers who were previously renters on the platform — only visible via identity resolution.');
+  renderBAN(banGrid, 'Resort Liquidity Index', liquidityIndex.toFixed(1));
+  el.appendChild(banGrid);
+
+  const grid = document.createElement('div');
+  grid.className = 'chart-grid';
+  ['chart-resale-timeline','chart-resale-dom','chart-resale-scatter',
+   'chart-resale-convrate','chart-resale-buyertype','chart-resale-map'].forEach(id => {
+    const card = document.createElement('div');
+    card.className = 'chart-card';
+    card.innerHTML = `<canvas id="${id}"></canvas>`;
+    grid.appendChild(card);
+  });
+  el.appendChild(grid);
+
+  renderTeaserBox(el, `How many resale buyers came through the rental funnel first? What drove conversion? The answer lives in the <strong>Customer Identity</strong> tab.`);
+  renderResaleCharts(rows);
+}
+
+// ─── renderResaleCharts ───────────────────────────────────────────────────────
+function renderResaleCharts(rows) {
+  // 1. Resale Volume Over Time
+  destroyChart('chart-resale-timeline');
+  const byDate = {};
+  rows.forEach(r=>{ byDate[r.date]=(byDate[r.date]||0)+r.completed_sales; });
+  const dates = Object.keys(byDate).sort();
+  _charts['chart-resale-timeline'] = new Chart(document.getElementById('chart-resale-timeline'), {
+    type:'line',
+    data:{ labels:dates.filter((_,i)=>i%7===0),
+      datasets:[{ label:'Completed Sales', data:dates.filter((_,i)=>i%7===0).map(d=>byDate[d]),
+        borderColor:CONFIG.palette.teal, backgroundColor:CONFIG.palette.teal+'18', fill:true, tension:0.3, pointRadius:0 }] },
+    options:{ responsive:true, plugins:{legend:{display:false}} },
+  });
+
+  // 2. Days on Market by Resort
+  destroyChart('chart-resale-dom');
+  const domByResort={};
+  rows.forEach(r=>{ if(!domByResort[r.resort])domByResort[r.resort]=[]; domByResort[r.resort].push(r.avg_days_on_market); });
+  _charts['chart-resale-dom'] = new Chart(document.getElementById('chart-resale-dom'), {
+    type:'bar', data:{
+      labels:CONFIG.resorts,
+      datasets:[{ label:'Avg Days on Market',
+        data:CONFIG.resorts.map(r=>domByResort[r]?Math.round(domByResort[r].reduce((a,b)=>a+b,0)/domByResort[r].length):0),
+        backgroundColor:CONFIG.palette.slate }]},
+    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}}},
+  });
+
+  // 3. Sale Price vs Comp scatter
+  destroyChart('chart-resale-scatter');
+  const scatterData = CUSTOMERS.filter(c=>c.resale_purchased&&c.resale_price).map(c=>({
+    x: c.resale_price,
+    y: Math.round(c.resale_price * (1 + (c.owner_distress_score||30)/200)),
+  }));
+  _charts['chart-resale-scatter'] = new Chart(document.getElementById('chart-resale-scatter'), {
+    type:'scatter', data:{ datasets:[{
+      label:'Sale Price vs Market Comp',
+      data: scatterData.slice(0,200),
+      backgroundColor: CONFIG.palette.blue+'88', pointRadius:4 }]},
+    options:{ responsive:true, scales:{
+      x:{title:{display:true,text:'Sale Price ($)'}},
+      y:{title:{display:true,text:'Est. Market Comp ($)'}},
+    }},
+  });
+
+  // 4. Conversion Rate by Resort
+  destroyChart('chart-resale-convrate');
+  const crByResort={};
+  rows.forEach(r=>{
+    if(!crByResort[r.resort])crByResort[r.resort]={inq:0,sales:0};
+    crByResort[r.resort].inq+=r.resale_inquiries; crByResort[r.resort].sales+=r.completed_sales;
+  });
+  _charts['chart-resale-convrate'] = new Chart(document.getElementById('chart-resale-convrate'), {
+    type:'bar', data:{
+      labels:CONFIG.resorts,
+      datasets:[{ label:'Conversion Rate %',
+        data:CONFIG.resorts.map(r=>crByResort[r]&&crByResort[r].inq?Math.round(crByResort[r].sales/crByResort[r].inq*100):0),
+        backgroundColor:CONFIG.palette.navy }]},
+    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}}},
+  });
+
+  // 5. Prior Renter vs New-to-File stacked bar by resort
+  destroyChart('chart-resale-buyertype');
+  const priorByResort={}, newByResort={};
+  CUSTOMERS.filter(c=>c.resale_purchased&&c.resale_resort).forEach(c=>{
+    if(c.prior_renter_flag) priorByResort[c.resale_resort]=(priorByResort[c.resale_resort]||0)+1;
+    else                    newByResort[c.resale_resort]=(newByResort[c.resale_resort]||0)+1;
+  });
+  _charts['chart-resale-buyertype'] = new Chart(document.getElementById('chart-resale-buyertype'), {
+    type:'bar', data:{
+      labels:CONFIG.resorts,
+      datasets:[
+        { label:'🔒 Prior Renter (requires identity resolution)',
+          data:CONFIG.resorts.map(r=>priorByResort[r]||0), backgroundColor:CONFIG.palette.teal },
+        { label:'New-to-File',
+          data:CONFIG.resorts.map(r=>newByResort[r]||0),   backgroundColor:CONFIG.palette.gray2 },
+      ]},
+    options:{responsive:true,scales:{x:{stacked:true},y:{stacked:true}}},
+  });
+
+  // 6. Map
+  renderChoropleth('chart-resale-map', CUSTOMERS.filter(c=>c.resale_purchased), 'Resale Activity by State');
+}
+
+// ─── renderIdentityTab ────────────────────────────────────────────────────────
+function renderIdentityTab() {
+  const el = document.getElementById('tab-identity');
+  el.innerHTML = '';
+
+  const banner = document.createElement('div');
+  banner.className = 'match-banner';
+  banner.innerHTML = `
+    <div class="match-headline">${CONFIG.scale.linkedAccounts.toLocaleString()} customers linked across Owner Portal, Rental Marketplace &amp; Resale</div>
+    <div class="match-stats">
+      <span>Match confidence: <strong>${CONFIG.scale.matchConfidence}%</strong></span>
+      <span>Owner-only: <strong>${(CONFIG.scale.ownerOnly/1000).toFixed(0)}K</strong></span>
+      <span>Renter-only: <strong>${(CONFIG.scale.renterOnly/1000).toFixed(0)}K</strong></span>
+      <span>Resale-only: <strong>${(CONFIG.scale.resaleOnly/1000).toFixed(0)}K</strong></span>
+      <span>Traveler ID Rate: <strong>${CONFIG.scale.travelerIdRate}%</strong></span>
+    </div>
+  `;
+  el.appendChild(banner);
+
+  el.innerHTML += `<div class="filter-bar">
+    <div class="filter-group"><label>Resort</label>
+      <select data-filter="resort" data-tab="identity" onchange="handleFilter(this)">
+        <option value="all">All Resorts</option>
+      </select></div>
+    <div class="filter-group"><label>Segment</label>
+      <select data-filter="segment" data-tab="identity" onchange="handleFilter(this)">
+        <option value="all">All Linked</option>
+        <option value="top10">Top 10% CLV</option>
+        <option value="single">Single-Source Only</option>
+      </select></div>
+    <div class="filter-group"><label>Linked Status</label>
+      <select data-filter="linkedStatus" data-tab="identity" onchange="handleFilter(this)">
+        <option value="linked">Linked Only</option>
+        <option value="all">All</option>
+      </select></div>
+    <button class="btn-reset" onclick="resetFilters('identity')">Reset</button>
+    <button class="btn-export" onclick="exportCSV('identity')">Export</button>
+  </div>`;
+
+  const customers = filterCustomers();
+  const linked    = customers.filter(c=>c.global_customer_id);
+  const avgCLV    = linked.length ? Math.round(linked.reduce((s,c)=>s+c.estimated_clv,0)/linked.length) : 0;
+  const ownerRenterOverlap = CUSTOMERS.filter(c=>c.owner_id&&c.renter_id).length;
+  const totalOwners        = CUSTOMERS.filter(c=>c.owner_id).length;
+  const ownerRenterPct     = totalOwners ? Math.round(ownerRenterOverlap/totalOwners*100) : 0;
+  const resaleBuyers       = CUSTOMERS.filter(c=>c.resale_purchased);
+  const rentToBuyPct       = resaleBuyers.length ? Math.round(resaleBuyers.filter(c=>c.prior_renter_flag).length/resaleBuyers.length*100) : 0;
+  const travId             = CONFIG.scale.travelerIdRate;
+
+  const banGrid = document.createElement('div');
+  banGrid.className = 'ban-grid';
+  renderBAN(banGrid, 'Cross-Platform CLV / Linked Customer', `$${avgCLV.toLocaleString()}`, true, 'Avg estimated lifetime value across all linked data sources.');
+  renderBAN(banGrid, 'Owner-to-Renter Overlap',   `${ownerRenterPct}%`);
+  renderBAN(banGrid, 'Rent-to-Buy Conversion',    `${rentToBuyPct}%`);
+  renderBAN(banGrid, 'Traveler ID Rate',           `${travId}%`);
+  renderBAN(banGrid, 'Total Linked Customers',     `${(CONFIG.scale.linkedAccounts/1e6).toFixed(2)}M`);
+  renderBAN(banGrid, 'Avg Match Confidence',       `${CONFIG.scale.matchConfidence}%`);
+  el.appendChild(banGrid);
+
+  // Row 1: Sankey (2/3) + Venn (1/3)
+  const row1 = document.createElement('div');
+  row1.className = 'chart-grid-3col';
+
+  const sankeyCard = document.createElement('div');
+  sankeyCard.className = 'chart-card';
+  sankeyCard.innerHTML = `
+    <div class="chart-title">Rent-to-Buy Conversion Path</div>
+    <div id="chart-identity-sankey" style="width:100%;height:260px;"></div>
+    <div class="sankey-subtitle">18% of eligible renters converted to resale ownership — invisible without identity resolution</div>
+  `;
+  row1.appendChild(sankeyCard);
+
+  const vennCard = document.createElement('div');
+  vennCard.className = 'chart-card';
+  vennCard.innerHTML = `<div class="chart-title">Customer Population Overlap</div><canvas id="chart-identity-venn"></canvas>`;
+  row1.appendChild(vennCard);
+  el.appendChild(row1);
+
+  // Row 2: CLV scatter + Single vs Linked
+  const row2 = document.createElement('div');
+  row2.className = 'chart-grid';
+  ['chart-identity-clv','chart-identity-linked'].forEach(id => {
+    const card = document.createElement('div');
+    card.className = 'chart-card';
+    card.innerHTML = `<canvas id="${id}"></canvas>`;
+    row2.appendChild(card);
+  });
+  el.appendChild(row2);
+
+  // Row 3: geo bar + map
+  const row3 = document.createElement('div');
+  row3.className = 'chart-grid';
+  ['chart-identity-geo','chart-identity-map'].forEach(id => {
+    const card = document.createElement('div');
+    card.className = 'chart-card';
+    card.innerHTML = `<canvas id="${id}"></canvas>`;
+    row3.appendChild(card);
+  });
+  el.appendChild(row3);
+
+  renderIdentityCharts(customers);
+}
+
+// ─── renderIdentityCharts ─────────────────────────────────────────────────────
+function renderIdentityCharts(customers) {
+  // 1. Sankey
+  const sankeyEl = document.getElementById('chart-identity-sankey');
+  sankeyEl.innerHTML = '';
+  const width  = sankeyEl.clientWidth  || 500;
+  const height = sankeyEl.clientHeight || 260;
+
+  const svg = d3.select(sankeyEl).append('svg').attr('width',width).attr('height',height);
+
+  const sankeyLayout = d3.sankey()
+    .nodeWidth(20)
+    .nodePadding(16)
+    .extent([[1,1],[width-1,height-1]]);
+
+  const graph = {
+    nodes: [
+      { name: `All Renters\n${(CONFIG.scale.totalRenters/1000).toFixed(0)}K` },
+      { name: `Researched Resale\n${(CONFIG.scale.sankeyResearched/1000).toFixed(0)}K` },
+      { name: `Made Offer\n${(CONFIG.scale.sankeyOffered/1000).toFixed(0)}K` },
+      { name: `Purchased\n${(CONFIG.scale.renterConvertedResale/1000).toFixed(0)}K` },
+      { name: `Did Not Convert\n${((CONFIG.scale.totalRenters-CONFIG.scale.renterConvertedResale)/1000).toFixed(0)}K` },
+    ],
+    links: [
+      { source:0, target:1, value: CONFIG.scale.sankeyResearched },
+      { source:0, target:4, value: CONFIG.scale.totalRenters - CONFIG.scale.sankeyResearched },
+      { source:1, target:2, value: CONFIG.scale.sankeyOffered },
+      { source:1, target:4, value: CONFIG.scale.sankeyResearched - CONFIG.scale.sankeyOffered },
+      { source:2, target:3, value: CONFIG.scale.renterConvertedResale },
+      { source:2, target:4, value: CONFIG.scale.sankeyOffered - CONFIG.scale.renterConvertedResale },
+    ],
+  };
+
+  sankeyLayout(graph);
+
+  const nodeColors = [CONFIG.palette.navy, CONFIG.palette.blue, CONFIG.palette.blue, CONFIG.palette.teal, CONFIG.palette.gray2];
+
+  svg.append('g').selectAll('rect')
+    .data(graph.nodes).join('rect')
+    .attr('x', d=>d.x0).attr('y', d=>d.y0)
+    .attr('width', d=>d.x1-d.x0).attr('height', d=>d.y1-d.y0)
+    .attr('fill', (_,i)=>nodeColors[i]||CONFIG.palette.slate)
+    .append('title').text(d=>d.name);
+
+  svg.append('g').attr('fill','none').selectAll('path')
+    .data(graph.links).join('path')
+    .attr('d', d3.sankeyLinkHorizontal())
+    .attr('stroke', d => d.target.index===3 ? CONFIG.palette.teal : CONFIG.palette.gray2)
+    .attr('stroke-width', d=>Math.max(1,d.width))
+    .attr('opacity', 0.5)
+    .append('title').text(d=>`${d.source.name} → ${d.target.name}: ${d.value.toLocaleString()}`);
+
+  svg.append('g').style('font','10px sans-serif').selectAll('text')
+    .data(graph.nodes).join('text')
+    .attr('x', d=>d.x0<width/2 ? d.x1+6 : d.x0-6)
+    .attr('y', d=>(d.y1+d.y0)/2).attr('dy','0.35em')
+    .attr('text-anchor', d=>d.x0<width/2?'start':'end')
+    .text(d=>d.name.split('\n')[0])
+    .style('fill', CONFIG.palette.navy).style('font-weight','600');
+
+  // 2. Venn
+  destroyChart('chart-identity-venn');
+  const linkedC = customers.filter(c=>c.global_customer_id);
+  const ownerCount  = linkedC.filter(c=>c.owner_id).length;
+  const renterCount = linkedC.filter(c=>c.renter_id).length;
+  const resaleCount = linkedC.filter(c=>c.resale_id).length;
+  const allThreeCount = linkedC.filter(c=>c.owner_id&&c.renter_id&&c.resale_id).length;
+  _charts['chart-identity-venn'] = new Chart(document.getElementById('chart-identity-venn'), {
+    type: 'venn',
+    data: { datasets:[{
+      label:'Customer Overlap',
+      data:[
+        { sets:['Owner Portal'],         value: ownerCount,  label:`Owner Portal\n${ownerCount}` },
+        { sets:['Rental Marketplace'],   value: renterCount, label:`Rental\n${renterCount}` },
+        { sets:['Resale Marketplace'],   value: resaleCount, label:`Resale\n${resaleCount}` },
+        { sets:['Owner Portal','Rental Marketplace'], value: linkedC.filter(c=>c.owner_id&&c.renter_id).length },
+        { sets:['Owner Portal','Resale Marketplace'], value: linkedC.filter(c=>c.owner_id&&c.resale_id).length },
+        { sets:['Rental Marketplace','Resale Marketplace'], value: linkedC.filter(c=>c.renter_id&&c.resale_id).length },
+        { sets:['Owner Portal','Rental Marketplace','Resale Marketplace'], value: allThreeCount,
+          label:`All Three\n${allThreeCount}\nHighest CLV` },
+      ],
+      backgroundColor:[CONFIG.palette.navy+'88',CONFIG.palette.blue+'88',CONFIG.palette.teal+'88'],
+    }]},
+    options:{
+      responsive: true,
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: (context) => {
+              const sets = context.raw.sets;
+              const subset = CUSTOMERS.filter(c =>
+                sets.every(s =>
+                  s === 'Owner Portal'       ? !!c.owner_id  :
+                  s === 'Rental Marketplace' ? !!c.renter_id :
+                  s === 'Resale Marketplace' ? !!c.resale_id : false
+                )
+              );
+              const avgCLV = subset.length
+                ? Math.round(subset.reduce((s,c)=>s+c.estimated_clv,0)/subset.length)
+                : 0;
+              return `${(context.raw.value||0).toLocaleString()} customers · avg CLV $${avgCLV.toLocaleString()}`;
+            },
+          },
+        },
+      },
+    },
+  });
+
+  // 3. CLV by Segment scatter with tier mean lines
+  destroyChart('chart-identity-clv');
+  const SCATTER_SEGS = ['Owner Only','Renter Only','Resale Only','Owner+Renter','Renter+Buyer','All Three'];
+  const segColors = [CONFIG.palette.gray,CONFIG.palette.gray,CONFIG.palette.gray2,
+                     CONFIG.palette.blue,CONFIG.palette.blue,CONFIG.palette.teal];
+
+  const scatterDatasets = SCATTER_SEGS.map((seg, si) => ({
+    type: 'scatter',
+    label: seg,
+    data: customers.filter(c=>c.customer_segment===seg)
+      .map((c,j) => ({ x: si + ((j%11)-5)*0.055, y: c.estimated_clv })),
+    backgroundColor: segColors[si]+'55',
+    pointRadius: 3,
+    order: 1,
+  }));
+
+  function tierMean(segs) {
+    const sub = customers.filter(c=>segs.includes(c.customer_segment));
+    return sub.length ? Math.round(sub.reduce((s,c)=>s+c.estimated_clv,0)/sub.length) : 0;
+  }
+  const singleMean = tierMean(['Owner Only','Renter Only','Resale Only']);
+  const linkedMean = tierMean(['Owner+Renter','Renter+Buyer','All Three']);
+  const meanDatasets = [
+    { type:'line', label:`Single-source mean $${singleMean.toLocaleString()}`,
+      data:[{x:-0.4,y:singleMean},{x:2.4,y:singleMean}],
+      borderColor:CONFIG.palette.coral, borderWidth:2, borderDash:[6,3], pointRadius:0, order:0 },
+    { type:'line', label:`Linked mean $${linkedMean.toLocaleString()}`,
+      data:[{x:2.6,y:linkedMean},{x:5.4,y:linkedMean}],
+      borderColor:CONFIG.palette.teal, borderWidth:2, borderDash:[6,3], pointRadius:0, order:0 },
+  ];
+
+  _charts['chart-identity-clv'] = new Chart(document.getElementById('chart-identity-clv'), {
+    type: 'scatter',
+    data: { datasets: [...scatterDatasets, ...meanDatasets] },
+    options: {
+      responsive: true,
+      scales: {
+        x: {
+          min: -0.5, max: 5.5,
+          ticks: { stepSize:1, callback: val => SCATTER_SEGS[Math.round(val)] || '' },
+          grid: { display:false },
+        },
+        y: { title:{ display:true, text:'Estimated CLV ($)' } },
+      },
+      plugins: {
+        legend: { display:true, position:'bottom', labels:{ boxWidth:12, font:{size:10} } },
+        title: { display:true, text:'CLV Distribution by Customer Segment' },
+      },
+    },
+  });
+
+  // 4. Single-Source vs Linked by Resort
+  destroyChart('chart-identity-linked');
+  const linkedByResort = {};
+  const singleByResort = {};
+  CUSTOMERS.forEach(c => {
+    const resort = c.owner_resort||c.rental_resort||c.resale_resort;
+    if (!resort) return;
+    if (c.global_customer_id) linkedByResort[resort]=(linkedByResort[resort]||0)+1;
+    else                      singleByResort[resort]=(singleByResort[resort]||0)+1;
+  });
+  _charts['chart-identity-linked'] = new Chart(document.getElementById('chart-identity-linked'), {
+    type:'bar',
+    data:{ labels:CONFIG.resorts,
+      datasets:[
+        { label:'Linked',        data:CONFIG.resorts.map(r=>linkedByResort[r]||0), backgroundColor:CONFIG.palette.teal },
+        { label:'Single-Source', data:CONFIG.resorts.map(r=>singleByResort[r]||0), backgroundColor:CONFIG.palette.gray2 },
+      ]},
+    options:{responsive:true,scales:{x:{stacked:true},y:{stacked:true}}},
+  });
+
+  // 5. Top 10 States geo bar
+  destroyChart('chart-identity-geo');
+  const stateCounts={};
+  customers.filter(c=>c.global_customer_id&&c.home_state).forEach(c=>{stateCounts[c.home_state]=(stateCounts[c.home_state]||0)+1;});
+  const top10 = Object.entries(stateCounts).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  _charts['chart-identity-geo'] = new Chart(document.getElementById('chart-identity-geo'), {
+    type:'bar',
+    data:{ labels:top10.map(([s])=>s), datasets:[{ label:'Linked Customers',
+      data:top10.map(([,v])=>v), backgroundColor:CONFIG.palette.navy }]},
+    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false},title:{display:true,text:'Top 10 States — Linked Customers'}}},
+  });
+
+  // 6. Choropleth
+  renderChoropleth('chart-identity-map', customers.filter(c=>c.global_customer_id), 'Linked Customer Distribution');
+}
+
+
+// ── export.js ──
+function exportCSV(tab) {
+  let rows, filename, fields;
+  if (tab === 'owners') {
+    rows = filterDaily(DAILY_OWNERS, 'owners');
+    filename = 'owner_portal_export.csv';
+    fields = ['date','resort','active_listings','new_listings','price_reductions','avg_listing_price','avg_maintenance_fee','verified_listings','avg_days_listed','distress_flagged'];
+  } else if (tab === 'rentals') {
+    rows = filterDaily(DAILY_RENTALS, 'rentals');
+    filename = 'rental_marketplace_export.csv';
+    fields = ['date','resort','inquiries','bookings','completed_rentals','cancellations','rental_gmv','avg_booking_value','avg_lead_time_days','traveler_id_rate'];
+  } else if (tab === 'resale') {
+    rows = filterDaily(DAILY_RESALE, 'resale');
+    filename = 'resale_marketplace_export.csv';
+    fields = ['date','resort','resale_inquiries','offers_made','completed_sales','resale_gmv','avg_sale_price','avg_days_on_market','avg_discount_to_market'];
+  } else {
+    rows = filterCustomers();
+    filename = 'customer_identity_export.csv';
+    fields = ['global_customer_id','linked_sources','match_confidence_score','customer_segment','estimated_clv','home_state','owner_resort','rental_resort','resale_resort','prior_renter_flag','rent_to_buy_months'];
+  }
+
+  const header = fields.join(',');
+  const body = rows.map(r => fields.map(f => JSON.stringify(r[f]??'')).join(',')).join('\n');
+  const blob = new Blob([header+'\n'+body], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
+
+// ── main.js ──
+function populateResortDropdowns() {
+  document.querySelectorAll('select[data-filter="resort"]').forEach(sel => {
+    CONFIG.resorts.forEach(r => {
+      const opt = document.createElement('option');
+      opt.value = r;
+      opt.textContent = r;
+      sel.appendChild(opt);
+    });
+  });
+}
+
+function renderTab(tabId) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.getElementById(`tab-${tabId}`).classList.add('active');
+  document.querySelector(`.tab-btn[data-tab="${tabId}"]`).classList.add('active');
+
+  if (tabId === 'owners')   renderOwnersTab();
+  if (tabId === 'rentals')  renderRentalsTab();
+  if (tabId === 'resale')   renderResaleTab();
+  if (tabId === 'identity') renderIdentityTab();
+
+  populateResortDropdowns();
+}
+
+function handleFilter(selectEl) {
+  const tab    = selectEl.dataset.tab;
+  const filter = selectEl.dataset.filter;
+  STATE[tab][filter] = selectEl.value;
+  renderTab(tab);
+}
+
+function resetFilters(tab) {
+  Object.keys(STATE[tab]).forEach(k => {
+    STATE[tab][k] = k === 'linkedStatus' ? 'linked' : 'all';
+  });
+  renderTab(tab);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelector('.org-name').textContent = CONFIG.org.name;
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => renderTab(btn.dataset.tab));
+  });
+  populateResortDropdowns();
+  renderTab('identity');
+});
+</script>
+</body>
+</html>
