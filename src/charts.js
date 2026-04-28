@@ -173,7 +173,7 @@ function renderOwnersCharts(rows) {
           fill: true, tension: 0.3, pointRadius: 0,
         }],
       },
-      options: { responsive: true, plugins: { legend: { display: false } } },
+      options: { responsive: true, aspectRatio: 4, plugins: { legend: { display: false } } },
     }
   );
 
@@ -336,7 +336,7 @@ function renderRentalsCharts(rows) {
     data: { labels: dates.filter((_,i)=>i%7===0),
       datasets: [{ label: 'Completed Rentals', data: dates.filter((_,i)=>i%7===0).map(d=>byDate[d]),
         borderColor: CONFIG.palette.blue, backgroundColor: CONFIG.palette.blue+'18', fill:true, tension:0.3, pointRadius:0 }] },
-    options: { responsive:true, plugins:{ legend:{ display:false } } },
+    options: { responsive:true, aspectRatio: 4, plugins:{ legend:{ display:false } } },
   });
 
   // 2. Inquiry→Booking Funnel by Resort
@@ -387,7 +387,7 @@ function renderRentalsCharts(rows) {
     data:{ labels: CONFIG.resorts,
       datasets:[{ label:'Avg Booking Value ($)',
         data: CONFIG.resorts.map(r => valueByResort[r] ? Math.round(valueByResort[r].reduce((a,b)=>a+b,0)/valueByResort[r].length) : 0),
-        backgroundColor: CONFIG.palette.teal }] },
+        backgroundColor: CONFIG.palette.blue }] },
     options:{ responsive:true, plugins:{ legend:{ display:false } } },
   });
 
@@ -493,8 +493,8 @@ function renderResaleCharts(rows) {
     type:'line',
     data:{ labels:dates.filter((_,i)=>i%7===0),
       datasets:[{ label:'Completed Sales', data:dates.filter((_,i)=>i%7===0).map(d=>byDate[d]),
-        borderColor:CONFIG.palette.teal, backgroundColor:CONFIG.palette.teal+'18', fill:true, tension:0.3, pointRadius:0 }] },
-    options:{ responsive:true, plugins:{legend:{display:false}} },
+        borderColor:CONFIG.palette.slate, backgroundColor:CONFIG.palette.slate+'18', fill:true, tension:0.3, pointRadius:0 }] },
+    options:{ responsive:true, aspectRatio: 4, plugins:{legend:{display:false}} },
   });
 
   // 2. Days on Market by Resort
@@ -750,7 +750,7 @@ function renderIdentityCharts(customers) {
         { sets:['Owner Portal','Rental Marketplace','Resale Marketplace'], value: allThreeCount,
           label:`All Three\n${allThreeCount}\nHighest CLV` },
       ],
-      backgroundColor:[CONFIG.palette.navy+'88',CONFIG.palette.blue+'88',CONFIG.palette.teal+'88'],
+      backgroundColor:[CONFIG.palette.navy+'88',CONFIG.palette.blue+'88',CONFIG.palette.slate+'88'],
     }]},
     options:{
       responsive: true,

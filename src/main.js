@@ -38,10 +38,10 @@ function resetFilters(tab) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  document.querySelector('.org-name').textContent = CONFIG.org.name;
+  document.querySelector('.org-name').textContent = CONFIG.org.tagline;
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => renderTab(btn.dataset.tab));
   });
   populateResortDropdowns();
-  renderTab('identity');
+  renderTab('owners');
 });
