@@ -122,16 +122,31 @@ function renderOwnersTab() {
   renderBAN(banGrid, 'Distress-Flagged (avg/day)', avgDistress.toLocaleString());
   el.appendChild(banGrid);
 
-  const grid = document.createElement('div');
-  grid.className = 'chart-grid';
-  ['chart-owners-timeline','chart-owners-type','chart-owners-time-to-rent',
-   'chart-owners-price-reductions','chart-owners-fees','chart-owners-map'].forEach(id => {
+  const timelineWrap = document.createElement('div');
+  timelineWrap.className = 'chart-grid';
+  const timelineCard = document.createElement('div');
+  timelineCard.className = 'chart-card';
+  timelineCard.innerHTML = '<canvas id="chart-owners-timeline"></canvas>';
+  timelineWrap.appendChild(timelineCard);
+  el.appendChild(timelineWrap);
+
+  const midGrid = document.createElement('div');
+  midGrid.className = 'chart-grid chart-grid-2';
+  ['chart-owners-type','chart-owners-time-to-rent','chart-owners-price-reductions','chart-owners-fees'].forEach(id => {
     const card = document.createElement('div');
     card.className = 'chart-card';
     card.innerHTML = `<canvas id="${id}"></canvas>`;
-    grid.appendChild(card);
+    midGrid.appendChild(card);
   });
-  el.appendChild(grid);
+  el.appendChild(midGrid);
+
+  const mapWrap = document.createElement('div');
+  mapWrap.className = 'chart-grid';
+  const mapCard = document.createElement('div');
+  mapCard.className = 'chart-card';
+  mapCard.innerHTML = '<canvas id="chart-owners-map"></canvas>';
+  mapWrap.appendChild(mapCard);
+  el.appendChild(mapWrap);
 
   renderTeaserBox(el, `Whether an owner is also renting other resorts, purchasing resale, or in financial distress isn't visible from listing data alone. See <strong>Customer Identity</strong> tab.`);
 
@@ -279,16 +294,31 @@ function renderRentalsTab() {
   renderBAN(banGrid, 'Ultimate Traveler ID Rate', `${avgTravId}%`, true, 'Bookings where end traveler identity was confirmed vs. total bookings.');
   el.appendChild(banGrid);
 
-  const grid = document.createElement('div');
-  grid.className = 'chart-grid';
-  ['chart-rentals-timeline','chart-rentals-funnel','chart-rentals-repeat',
-   'chart-rentals-value','chart-rentals-cancel','chart-rentals-map'].forEach(id => {
+  const timelineWrap = document.createElement('div');
+  timelineWrap.className = 'chart-grid';
+  const timelineCard = document.createElement('div');
+  timelineCard.className = 'chart-card';
+  timelineCard.innerHTML = '<canvas id="chart-rentals-timeline"></canvas>';
+  timelineWrap.appendChild(timelineCard);
+  el.appendChild(timelineWrap);
+
+  const midGrid = document.createElement('div');
+  midGrid.className = 'chart-grid chart-grid-2';
+  ['chart-rentals-funnel','chart-rentals-repeat','chart-rentals-value','chart-rentals-cancel'].forEach(id => {
     const card = document.createElement('div');
     card.className = 'chart-card';
     card.innerHTML = `<canvas id="${id}"></canvas>`;
-    grid.appendChild(card);
+    midGrid.appendChild(card);
   });
-  el.appendChild(grid);
+  el.appendChild(midGrid);
+
+  const mapWrap = document.createElement('div');
+  mapWrap.className = 'chart-grid';
+  const mapCard = document.createElement('div');
+  mapCard.className = 'chart-card';
+  mapCard.innerHTML = '<canvas id="chart-rentals-map"></canvas>';
+  mapWrap.appendChild(mapCard);
+  el.appendChild(mapWrap);
 
   renderTeaserBox(el, `Whether a renter comes back, books the same resort twice, or converts to ownership — none of that is visible from rental data alone. See <strong>Customer Identity</strong> tab.`);
   renderRentalsCharts(rows);
@@ -422,16 +452,31 @@ function renderResaleTab() {
   renderBAN(banGrid, 'Resort Liquidity Index', liquidityIndex.toFixed(1));
   el.appendChild(banGrid);
 
-  const grid = document.createElement('div');
-  grid.className = 'chart-grid';
-  ['chart-resale-timeline','chart-resale-dom','chart-resale-scatter',
-   'chart-resale-convrate','chart-resale-buyertype','chart-resale-map'].forEach(id => {
+  const timelineWrap = document.createElement('div');
+  timelineWrap.className = 'chart-grid';
+  const timelineCard = document.createElement('div');
+  timelineCard.className = 'chart-card';
+  timelineCard.innerHTML = '<canvas id="chart-resale-timeline"></canvas>';
+  timelineWrap.appendChild(timelineCard);
+  el.appendChild(timelineWrap);
+
+  const midGrid = document.createElement('div');
+  midGrid.className = 'chart-grid chart-grid-2';
+  ['chart-resale-dom','chart-resale-scatter','chart-resale-convrate','chart-resale-buyertype'].forEach(id => {
     const card = document.createElement('div');
     card.className = 'chart-card';
     card.innerHTML = `<canvas id="${id}"></canvas>`;
-    grid.appendChild(card);
+    midGrid.appendChild(card);
   });
-  el.appendChild(grid);
+  el.appendChild(midGrid);
+
+  const mapWrap = document.createElement('div');
+  mapWrap.className = 'chart-grid';
+  const mapCard = document.createElement('div');
+  mapCard.className = 'chart-card';
+  mapCard.innerHTML = '<canvas id="chart-resale-map"></canvas>';
+  mapWrap.appendChild(mapCard);
+  el.appendChild(mapWrap);
 
   renderTeaserBox(el, `How many resale buyers came through the rental funnel first? What drove conversion? The answer lives in the <strong>Customer Identity</strong> tab.`);
   renderResaleCharts(rows);
@@ -601,7 +646,7 @@ function renderIdentityTab() {
 
   // Row 2: CLV scatter + Single vs Linked
   const row2 = document.createElement('div');
-  row2.className = 'chart-grid';
+  row2.className = 'chart-grid chart-grid-2';
   ['chart-identity-clv','chart-identity-linked'].forEach(id => {
     const card = document.createElement('div');
     card.className = 'chart-card';
@@ -612,7 +657,7 @@ function renderIdentityTab() {
 
   // Row 3: geo bar + map
   const row3 = document.createElement('div');
-  row3.className = 'chart-grid';
+  row3.className = 'chart-grid chart-grid-2';
   ['chart-identity-geo','chart-identity-map'].forEach(id => {
     const card = document.createElement('div');
     card.className = 'chart-card';
