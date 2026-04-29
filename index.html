@@ -1288,14 +1288,16 @@ function renderIdentityCharts(customers) {
     .style('fill', CONFIG.palette.navy).style('font-weight','600');
 
   // 2. Venn — custom D3 SVG (3-circle)
+  // Venn uses CUSTOMERS (full unfiltered population) — the diagram represents
+  // total platform overlap, not the current linked-only filter view.
   const ow = c => !!c.owner_id, re = c => !!c.renter_id, rs = c => !!c.resale_id;
-  const ownerOnly    = customers.filter(c =>  ow(c) && !re(c) && !rs(c)).length;
-  const renterOnly   = customers.filter(c => !ow(c) &&  re(c) && !rs(c)).length;
-  const resaleOnly   = customers.filter(c => !ow(c) && !re(c) &&  rs(c)).length;
-  const ownerRenter  = customers.filter(c =>  ow(c) &&  re(c) && !rs(c)).length;
-  const ownerResale  = customers.filter(c =>  ow(c) && !re(c) &&  rs(c)).length;
-  const renterResale = customers.filter(c => !ow(c) &&  re(c) &&  rs(c)).length;
-  const allThreeCount= customers.filter(c =>  ow(c) &&  re(c) &&  rs(c)).length;
+  const ownerOnly    = CUSTOMERS.filter(c =>  ow(c) && !re(c) && !rs(c)).length;
+  const renterOnly   = CUSTOMERS.filter(c => !ow(c) &&  re(c) && !rs(c)).length;
+  const resaleOnly   = CUSTOMERS.filter(c => !ow(c) && !re(c) &&  rs(c)).length;
+  const ownerRenter  = CUSTOMERS.filter(c =>  ow(c) &&  re(c) && !rs(c)).length;
+  const ownerResale  = CUSTOMERS.filter(c =>  ow(c) && !re(c) &&  rs(c)).length;
+  const renterResale = CUSTOMERS.filter(c => !ow(c) &&  re(c) &&  rs(c)).length;
+  const allThreeCount= CUSTOMERS.filter(c =>  ow(c) &&  re(c) &&  rs(c)).length;
 
   const vennEl = document.getElementById('chart-identity-venn');
   vennEl.innerHTML = '';
