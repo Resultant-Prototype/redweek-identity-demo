@@ -131,7 +131,7 @@ function renderOwnersTab() {
   el.appendChild(timelineWrap);
 
   const midGrid = document.createElement('div');
-  midGrid.className = 'chart-grid chart-grid-2';
+  midGrid.className = 'chart-grid chart-grid-4';
   ['chart-owners-type','chart-owners-time-to-rent','chart-owners-price-reductions','chart-owners-fees'].forEach(id => {
     const card = document.createElement('div');
     card.className = 'chart-card';
@@ -173,7 +173,7 @@ function renderOwnersCharts(rows) {
           fill: true, tension: 0.3, pointRadius: 0,
         }],
       },
-      options: { responsive: true, aspectRatio: 4, plugins: { legend: { display: false } } },
+      options: { responsive: true, aspectRatio: 5, plugins: { legend: { display: false } } },
     }
   );
 
@@ -303,7 +303,7 @@ function renderRentalsTab() {
   el.appendChild(timelineWrap);
 
   const midGrid = document.createElement('div');
-  midGrid.className = 'chart-grid chart-grid-2';
+  midGrid.className = 'chart-grid chart-grid-4';
   ['chart-rentals-funnel','chart-rentals-repeat','chart-rentals-value','chart-rentals-cancel'].forEach(id => {
     const card = document.createElement('div');
     card.className = 'chart-card';
@@ -336,7 +336,7 @@ function renderRentalsCharts(rows) {
     data: { labels: dates.filter((_,i)=>i%7===0),
       datasets: [{ label: 'Completed Rentals', data: dates.filter((_,i)=>i%7===0).map(d=>byDate[d]),
         borderColor: CONFIG.palette.blue, backgroundColor: CONFIG.palette.blue+'18', fill:true, tension:0.3, pointRadius:0 }] },
-    options: { responsive:true, aspectRatio: 4, plugins:{ legend:{ display:false } } },
+    options: { responsive:true, aspectRatio: 5, plugins:{ legend:{ display:false } } },
   });
 
   // 2. Inquiry→Booking Funnel by Resort
@@ -461,7 +461,7 @@ function renderResaleTab() {
   el.appendChild(timelineWrap);
 
   const midGrid = document.createElement('div');
-  midGrid.className = 'chart-grid chart-grid-2';
+  midGrid.className = 'chart-grid chart-grid-4';
   ['chart-resale-dom','chart-resale-scatter','chart-resale-convrate','chart-resale-buyertype'].forEach(id => {
     const card = document.createElement('div');
     card.className = 'chart-card';
@@ -494,7 +494,7 @@ function renderResaleCharts(rows) {
     data:{ labels:dates.filter((_,i)=>i%7===0),
       datasets:[{ label:'Completed Sales', data:dates.filter((_,i)=>i%7===0).map(d=>byDate[d]),
         borderColor:CONFIG.palette.slate, backgroundColor:CONFIG.palette.slate+'18', fill:true, tension:0.3, pointRadius:0 }] },
-    options:{ responsive:true, aspectRatio: 4, plugins:{legend:{display:false}} },
+    options:{ responsive:true, aspectRatio: 5, plugins:{legend:{display:false}} },
   });
 
   // 2. Days on Market by Resort
