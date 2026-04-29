@@ -738,17 +738,17 @@ function renderIdentityCharts(customers) {
   const RC  = { x: cx + 52, y: 88 };
   const RSC = { x: cx,      y: 170 };
 
-  const svg = d3.select(vennEl).append('svg').attr('width', W).attr('height', H);
+  const vennSvg = d3.select(vennEl).append('svg').attr('width', W).attr('height', H);
 
   [[OC, '#1B2A4A'], [RC, '#2E618F'], [RSC, '#5B7FA6']].forEach(([c, col]) => {
-    svg.append('circle')
+    vennSvg.append('circle')
       .attr('cx', c.x).attr('cy', c.y).attr('r', r)
       .attr('fill', col).attr('fill-opacity', 0.18)
       .attr('stroke', col).attr('stroke-width', 1.5);
   });
 
   const txt = (x, y, text, size = 11, bold = false, col = '#111827') =>
-    svg.append('text')
+    vennSvg.append('text')
       .attr('x', x).attr('y', y)
       .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
       .attr('font-size', size).attr('font-family', "'Inter', system-ui, sans-serif")
