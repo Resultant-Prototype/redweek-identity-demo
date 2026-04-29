@@ -69,6 +69,17 @@ function renderTeaserBox(container, text) {
   container.appendChild(box);
 }
 
+function infoIcon(tip) {
+  return `<span class="chart-info-icon" data-tooltip="${tip}">ⓘ</span>`;
+}
+
+function makeChartCard(id, title, tooltip = '') {
+  const card = document.createElement('div');
+  card.className = 'chart-card';
+  card.innerHTML = `<div class="chart-title">${title}${tooltip ? infoIcon(tooltip) : ''}</div><canvas id="${id}"></canvas>`;
+  return card;
+}
+
 // ─── renderOwnersTab ──────────────────────────────────────────────────────────
 function renderOwnersTab() {
   const el = document.getElementById('tab-owners');
@@ -124,28 +135,22 @@ function renderOwnersTab() {
 
   const timelineWrap = document.createElement('div');
   timelineWrap.className = 'chart-grid';
-  const timelineCard = document.createElement('div');
-  timelineCard.className = 'chart-card';
-  timelineCard.innerHTML = '<canvas id="chart-owners-timeline"></canvas>';
-  timelineWrap.appendChild(timelineCard);
+  timelineWrap.appendChild(makeChartCard('chart-owners-timeline', 'Active Listings Over Time', 'Weekly listing count. Drops indicate seasonal lows or resort-specific expirations.'));
   el.appendChild(timelineWrap);
 
   const midGrid = document.createElement('div');
   midGrid.className = 'chart-grid chart-grid-4';
-  ['chart-owners-type','chart-owners-time-to-rent','chart-owners-price-reductions','chart-owners-fees'].forEach(id => {
-    const card = document.createElement('div');
-    card.className = 'chart-card';
-    card.innerHTML = `<canvas id="${id}"></canvas>`;
-    midGrid.appendChild(card);
-  });
+  [
+    ['chart-owners-type',             'Listings by Owner Type',          'Individual vs. portfolio vs. broker split — portfolio/broker owners price and renew differently.'],
+    ['chart-owners-time-to-rent',     'Days to Rent by Resort',          'Average days a listing sits before booking. High values signal pricing or demand gaps.'],
+    ['chart-owners-price-reductions', 'Price Reductions by Listing Age', 'How often owners cut prices as listings age — a leading indicator of distress or overpricing.'],
+    ['chart-owners-fees',             'Avg Maintenance Fee by Resort',   'Mean annual maintenance cost per resort. High fees correlate with slower listing velocity.'],
+  ].forEach(([id, title, tip]) => midGrid.appendChild(makeChartCard(id, title, tip)));
   el.appendChild(midGrid);
 
   const mapWrap = document.createElement('div');
   mapWrap.className = 'chart-grid';
-  const mapCard = document.createElement('div');
-  mapCard.className = 'chart-card';
-  mapCard.innerHTML = '<canvas id="chart-owners-map"></canvas>';
-  mapWrap.appendChild(mapCard);
+  mapWrap.appendChild(makeChartCard('chart-owners-map', 'Owner Home State', 'Where owners live — useful for targeted outreach and regional marketing.'));
   el.appendChild(mapWrap);
 
   renderTeaserBox(el, `Whether an owner is also renting other resorts, purchasing resale, or in financial distress isn't visible from listing data alone. See <strong>Customer Identity</strong> tab.`);
@@ -296,28 +301,22 @@ function renderRentalsTab() {
 
   const timelineWrap = document.createElement('div');
   timelineWrap.className = 'chart-grid';
-  const timelineCard = document.createElement('div');
-  timelineCard.className = 'chart-card';
-  timelineCard.innerHTML = '<canvas id="chart-rentals-timeline"></canvas>';
-  timelineWrap.appendChild(timelineCard);
+  timelineWrap.appendChild(makeChartCard('chart-rentals-timeline', 'Completed Rentals Over Time', 'Weekly rental completions. Seasonal peaks align with school holidays and resort peak seasons.'));
   el.appendChild(timelineWrap);
 
   const midGrid = document.createElement('div');
   midGrid.className = 'chart-grid chart-grid-4';
-  ['chart-rentals-funnel','chart-rentals-repeat','chart-rentals-value','chart-rentals-cancel'].forEach(id => {
-    const card = document.createElement('div');
-    card.className = 'chart-card';
-    card.innerHTML = `<canvas id="${id}"></canvas>`;
-    midGrid.appendChild(card);
-  });
+  [
+    ['chart-rentals-funnel', 'Inquiry-to-Booking by Resort',  'What share of inquiries convert to completed bookings, by resort. Low rates signal friction or pricing mismatches.'],
+    ['chart-rentals-repeat', 'Repeat vs. First-Time Renters', 'Repeat renters have 2–3× higher lifetime value. Without identity resolution, repeat visits across devices are invisible.'],
+    ['chart-rentals-value',  'Avg Rental Value by Resort',    'Mean rental transaction size. High-value resorts warrant premium owner support and pricing guidance.'],
+    ['chart-rentals-cancel', 'Cancellation Trend',            'Weekly cancellation rate. Spikes often signal inventory-demand mismatches or policy friction.'],
+  ].forEach(([id, title, tip]) => midGrid.appendChild(makeChartCard(id, title, tip)));
   el.appendChild(midGrid);
 
   const mapWrap = document.createElement('div');
   mapWrap.className = 'chart-grid';
-  const mapCard = document.createElement('div');
-  mapCard.className = 'chart-card';
-  mapCard.innerHTML = '<canvas id="chart-rentals-map"></canvas>';
-  mapWrap.appendChild(mapCard);
+  mapWrap.appendChild(makeChartCard('chart-rentals-map', 'Renter Home State', 'Where renters travel from — informs regional marketing and resort recommendations.'));
   el.appendChild(mapWrap);
 
   renderTeaserBox(el, `Whether a renter comes back, books the same resort twice, or converts to ownership — none of that is visible from rental data alone. See <strong>Customer Identity</strong> tab.`);
@@ -454,28 +453,22 @@ function renderResaleTab() {
 
   const timelineWrap = document.createElement('div');
   timelineWrap.className = 'chart-grid';
-  const timelineCard = document.createElement('div');
-  timelineCard.className = 'chart-card';
-  timelineCard.innerHTML = '<canvas id="chart-resale-timeline"></canvas>';
-  timelineWrap.appendChild(timelineCard);
+  timelineWrap.appendChild(makeChartCard('chart-resale-timeline', 'Resale Volume Over Time', 'Weekly completed resale sales. Slow periods may indicate pricing resistance or low inventory quality.'));
   el.appendChild(timelineWrap);
 
   const midGrid = document.createElement('div');
   midGrid.className = 'chart-grid chart-grid-4';
-  ['chart-resale-dom','chart-resale-scatter','chart-resale-convrate','chart-resale-buyertype'].forEach(id => {
-    const card = document.createElement('div');
-    card.className = 'chart-card';
-    card.innerHTML = `<canvas id="${id}"></canvas>`;
-    midGrid.appendChild(card);
-  });
+  [
+    ['chart-resale-dom',      'Days on Market by Resort',         'How long resale listings take to close. Long days-on-market suggests overpricing or low buyer demand.'],
+    ['chart-resale-scatter',  'Discount vs. Days on Market',      'Do sellers who discount more close faster? This chart shows the relationship between pricing aggressiveness and velocity.'],
+    ['chart-resale-convrate', 'Conversion Rate by Resort',        'Inquiry-to-sale rate per resort. Low rates signal pricing or buyer confidence gaps.'],
+    ['chart-resale-buyertype','Prior Renter Share of Buyers',     'Share of resale buyers who were previously renters on this platform — only visible via P3RL identity resolution.'],
+  ].forEach(([id, title, tip]) => midGrid.appendChild(makeChartCard(id, title, tip)));
   el.appendChild(midGrid);
 
   const mapWrap = document.createElement('div');
   mapWrap.className = 'chart-grid';
-  const mapCard = document.createElement('div');
-  mapCard.className = 'chart-card';
-  mapCard.innerHTML = '<canvas id="chart-resale-map"></canvas>';
-  mapWrap.appendChild(mapCard);
+  mapWrap.appendChild(makeChartCard('chart-resale-map', 'Buyer Home State', 'Where resale buyers are located — useful for targeted outreach and geo-targeted campaigns.'));
   el.appendChild(mapWrap);
 
   renderTeaserBox(el, `How many resale buyers came through the rental funnel first? What drove conversion? The answer lives in the <strong>Customer Identity</strong> tab.`);
@@ -617,12 +610,12 @@ function renderIdentityTab() {
 
   const banGrid = document.createElement('div');
   banGrid.className = 'ban-grid';
-  renderBAN(banGrid, 'Cross-Platform CLV / Linked Customer', `$${avgCLV.toLocaleString()}`, true, 'Avg estimated lifetime value across all linked data sources.');
-  renderBAN(banGrid, 'Owner-to-Renter Overlap',   `${ownerRenterPct}%`);
-  renderBAN(banGrid, 'Rent-to-Buy Conversion',    `${rentToBuyPct}%`);
-  renderBAN(banGrid, 'Traveler ID Rate',           `${travId}%`);
-  renderBAN(banGrid, 'Total Linked Customers',     `${(CONFIG.scale.linkedAccounts/1e6).toFixed(2)}M`);
-  renderBAN(banGrid, 'Avg Match Confidence',       `${CONFIG.scale.matchConfidence}%`);
+  renderBAN(banGrid, 'Cross-Platform CLV / Linked Customer', `$${avgCLV.toLocaleString()}`, true, 'Avg estimated lifetime value per customer across all linked data sources — owners, renters, and resale buyers.');
+  renderBAN(banGrid, 'Owner-to-Renter Overlap',   `${ownerRenterPct}%`, false, 'Owners who also rent other properties — dual-role participants with the highest retention rates.');
+  renderBAN(banGrid, 'Rent-to-Buy Conversion',    `${rentToBuyPct}%`,   false, 'Renters who later purchased a resale timeshare. Only visible by linking rental and resale records via P3RL.');
+  renderBAN(banGrid, 'Traveler ID Rate',           `${travId}%`,         false, 'Share of bookings where the actual end traveler was identified, not just the booking agent or primary account holder.');
+  renderBAN(banGrid, 'Total Linked Customers',     `${(CONFIG.scale.linkedAccounts/1e6).toFixed(2)}M`, false, 'Unique individuals matched across Owner Portal, Rental Marketplace, and Resale using P3RL identity resolution.');
+  renderBAN(banGrid, 'Avg Match Confidence',       `${CONFIG.scale.matchConfidence}%`, false, 'Weighted average confidence score across all cross-source identity links. 91% indicates high-quality matching with low false-positive risk.');
   el.appendChild(banGrid);
 
   // Row 1: Sankey (2/3) + Venn (1/3)
@@ -632,7 +625,7 @@ function renderIdentityTab() {
   const sankeyCard = document.createElement('div');
   sankeyCard.className = 'chart-card';
   sankeyCard.innerHTML = `
-    <div class="chart-title">Rent-to-Buy Conversion Path</div>
+    <div class="chart-title">Rent-to-Buy Conversion Path${infoIcon('How renters move through the resale funnel. 18% convert — a pipeline only visible after P3RL links rental and resale records.')}</div>
     <div id="chart-identity-sankey" style="width:100%;height:260px;"></div>
     <div class="sankey-subtitle">18% of eligible renters converted to resale ownership — invisible without identity resolution</div>
   `;
@@ -640,30 +633,26 @@ function renderIdentityTab() {
 
   const vennCard = document.createElement('div');
   vennCard.className = 'chart-card';
-  vennCard.innerHTML = `<div class="chart-title">Customer Population Overlap</div><canvas id="chart-identity-venn"></canvas>`;
+  vennCard.innerHTML = `<div class="chart-title">Customer Population Overlap${infoIcon('Customers appearing across Owner Portal, Rental Marketplace, and Resale. The center represents highest-CLV multi-platform participants.')}</div><div id="chart-identity-venn"></div>`;
   row1.appendChild(vennCard);
   el.appendChild(row1);
 
   // Row 2: CLV scatter + Single vs Linked
   const row2 = document.createElement('div');
   row2.className = 'chart-grid chart-grid-2';
-  ['chart-identity-clv','chart-identity-linked'].forEach(id => {
-    const card = document.createElement('div');
-    card.className = 'chart-card';
-    card.innerHTML = `<canvas id="${id}"></canvas>`;
-    row2.appendChild(card);
-  });
+  [
+    ['chart-identity-clv',    'CLV Distribution by Customer Segment', 'Estimated lifetime value by identity segment. Cross-platform linked customers show significantly higher CLV than single-source customers.'],
+    ['chart-identity-linked', 'Linked vs. Single-Source by Resort',   'Per-resort breakdown of linked vs. single-source customers. Linked customers generate more bookings and higher transaction value.'],
+  ].forEach(([id, title, tip]) => row2.appendChild(makeChartCard(id, title, tip)));
   el.appendChild(row2);
 
   // Row 3: geo bar + map
   const row3 = document.createElement('div');
   row3.className = 'chart-grid chart-grid-2';
-  ['chart-identity-geo','chart-identity-map'].forEach(id => {
-    const card = document.createElement('div');
-    card.className = 'chart-card';
-    card.innerHTML = `<canvas id="${id}"></canvas>`;
-    row3.appendChild(card);
-  });
+  [
+    ['chart-identity-geo', 'Top States — Linked Customers',   'Geographic concentration of P3RL-linked customers by state. Informs regional marketing prioritization.'],
+    ['chart-identity-map', 'Home State of Linked Customers',  'Where P3RL-linked customers live — enables precision geo-targeting across all three platforms.'],
+  ].forEach(([id, title, tip]) => row3.appendChild(makeChartCard(id, title, tip)));
   el.appendChild(row3);
 
   renderIdentityCharts(customers);
@@ -729,53 +718,56 @@ function renderIdentityCharts(customers) {
     .text(d=>d.name.split('\n')[0])
     .style('fill', CONFIG.palette.navy).style('font-weight','600');
 
-  // 2. Venn
-  destroyChart('chart-identity-venn');
-  const linkedC = customers.filter(c=>c.global_customer_id);
-  const ownerCount  = linkedC.filter(c=>c.owner_id).length;
-  const renterCount = linkedC.filter(c=>c.renter_id).length;
-  const resaleCount = linkedC.filter(c=>c.resale_id).length;
-  const allThreeCount = linkedC.filter(c=>c.owner_id&&c.renter_id&&c.resale_id).length;
-  _charts['chart-identity-venn'] = new Chart(document.getElementById('chart-identity-venn'), {
-    type: 'venn',
-    data: { datasets:[{
-      label:'Customer Overlap',
-      data:[
-        { sets:['Owner Portal'],         value: ownerCount,  label:`Owner Portal\n${ownerCount}` },
-        { sets:['Rental Marketplace'],   value: renterCount, label:`Rental\n${renterCount}` },
-        { sets:['Resale Marketplace'],   value: resaleCount, label:`Resale\n${resaleCount}` },
-        { sets:['Owner Portal','Rental Marketplace'], value: linkedC.filter(c=>c.owner_id&&c.renter_id).length },
-        { sets:['Owner Portal','Resale Marketplace'], value: linkedC.filter(c=>c.owner_id&&c.resale_id).length },
-        { sets:['Rental Marketplace','Resale Marketplace'], value: linkedC.filter(c=>c.renter_id&&c.resale_id).length },
-        { sets:['Owner Portal','Rental Marketplace','Resale Marketplace'], value: allThreeCount,
-          label:`All Three\n${allThreeCount}\nHighest CLV` },
-      ],
-      backgroundColor:[CONFIG.palette.navy+'88',CONFIG.palette.blue+'88',CONFIG.palette.slate+'88'],
-    }]},
-    options:{
-      responsive: true,
-      plugins: {
-        tooltip: {
-          callbacks: {
-            label: (context) => {
-              const sets = context.raw.sets;
-              const subset = CUSTOMERS.filter(c =>
-                sets.every(s =>
-                  s === 'Owner Portal'       ? !!c.owner_id  :
-                  s === 'Rental Marketplace' ? !!c.renter_id :
-                  s === 'Resale Marketplace' ? !!c.resale_id : false
-                )
-              );
-              const avgCLV = subset.length
-                ? Math.round(subset.reduce((s,c)=>s+c.estimated_clv,0)/subset.length)
-                : 0;
-              return `${(context.raw.value||0).toLocaleString()} customers · avg CLV $${avgCLV.toLocaleString()}`;
-            },
-          },
-        },
-      },
-    },
+  // 2. Venn — custom D3 SVG (3-circle)
+  const linkedC     = customers.filter(c => c.global_customer_id);
+  const ow = c => !!c.owner_id, re = c => !!c.renter_id, rs = c => !!c.resale_id;
+  const ownerOnly    = linkedC.filter(c =>  ow(c) && !re(c) && !rs(c)).length;
+  const renterOnly   = linkedC.filter(c => !ow(c) &&  re(c) && !rs(c)).length;
+  const resaleOnly   = linkedC.filter(c => !ow(c) && !re(c) &&  rs(c)).length;
+  const ownerRenter  = linkedC.filter(c =>  ow(c) &&  re(c) && !rs(c)).length;
+  const ownerResale  = linkedC.filter(c =>  ow(c) && !re(c) &&  rs(c)).length;
+  const renterResale = linkedC.filter(c => !ow(c) &&  re(c) &&  rs(c)).length;
+  const allThreeCount= linkedC.filter(c =>  ow(c) &&  re(c) &&  rs(c)).length;
+
+  const vennEl = document.getElementById('chart-identity-venn');
+  vennEl.innerHTML = '';
+  const W = vennEl.clientWidth || 300, H = 250;
+  const cx = W / 2, r = 72;
+  // Equilateral-ish triangle: Owners top-left, Renters top-right, Resale bottom
+  const OC  = { x: cx - 52, y: 88 };
+  const RC  = { x: cx + 52, y: 88 };
+  const RSC = { x: cx,      y: 170 };
+
+  const svg = d3.select(vennEl).append('svg').attr('width', W).attr('height', H);
+
+  [[OC, '#1B2A4A'], [RC, '#2E618F'], [RSC, '#5B7FA6']].forEach(([c, col]) => {
+    svg.append('circle')
+      .attr('cx', c.x).attr('cy', c.y).attr('r', r)
+      .attr('fill', col).attr('fill-opacity', 0.18)
+      .attr('stroke', col).attr('stroke-width', 1.5);
   });
+
+  const txt = (x, y, text, size = 11, bold = false, col = '#111827') =>
+    svg.append('text')
+      .attr('x', x).attr('y', y)
+      .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
+      .attr('font-size', size).attr('font-family', "'Inter', system-ui, sans-serif")
+      .attr('font-weight', bold ? 700 : 500).attr('fill', col)
+      .text(text);
+
+  // Circle labels
+  txt(cx - 108, 52,  'Owners',  11, true, '#1B2A4A');
+  txt(cx + 108, 52,  'Renters', 11, true, '#2E618F');
+  txt(cx,       240, 'Resale',  11, true, '#5B7FA6');
+
+  // Region counts
+  txt(cx - 95,  88,  ownerOnly.toLocaleString());
+  txt(cx + 95,  88,  renterOnly.toLocaleString());
+  txt(cx,       220, resaleOnly.toLocaleString());
+  txt(cx,       62,  ownerRenter.toLocaleString());
+  txt(cx - 50,  138, ownerResale.toLocaleString());
+  txt(cx + 50,  138, renterResale.toLocaleString());
+  txt(cx,       112, allThreeCount.toLocaleString(), 13, true);
 
   // 3. CLV by Segment scatter with tier mean lines
   destroyChart('chart-identity-clv');
@@ -823,7 +815,6 @@ function renderIdentityCharts(customers) {
       },
       plugins: {
         legend: { display:true, position:'bottom', labels:{ boxWidth:12, font:{size:10} } },
-        title: { display:true, text:'CLV Distribution by Customer Segment' },
       },
     },
   });
@@ -857,7 +848,7 @@ function renderIdentityCharts(customers) {
     type:'bar',
     data:{ labels:top10.map(([s])=>s), datasets:[{ label:'Linked Customers',
       data:top10.map(([,v])=>v), backgroundColor:CONFIG.palette.navy }]},
-    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false},title:{display:true,text:'Top 10 States — Linked Customers'}}},
+    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}}},
   });
 
   // 6. Choropleth
