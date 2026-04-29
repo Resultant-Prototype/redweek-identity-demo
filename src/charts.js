@@ -56,7 +56,7 @@ function renderBAN(container, label, value, isLead = false, tooltip = '') {
   const card = document.createElement('div');
   card.className = 'ban-card' + (isLead ? ' lead' : '');
   card.innerHTML = `
-    <div class="ban-label">${label}${tooltip ? ` <span class="ban-tip" title="${tooltip}">ⓘ</span>` : ''}</div>
+    <div class="ban-label">${label}${tooltip ? ` <span class="ban-tip" data-tooltip="${tooltip}">ⓘ</span>` : ''}</div>
     <div class="ban-value">${value}</div>
   `;
   container.appendChild(card);
@@ -719,15 +719,14 @@ function renderIdentityCharts(customers) {
     .style('fill', CONFIG.palette.navy).style('font-weight','600');
 
   // 2. Venn — custom D3 SVG (3-circle)
-  const linkedC     = customers.filter(c => c.global_customer_id);
   const ow = c => !!c.owner_id, re = c => !!c.renter_id, rs = c => !!c.resale_id;
-  const ownerOnly    = linkedC.filter(c =>  ow(c) && !re(c) && !rs(c)).length;
-  const renterOnly   = linkedC.filter(c => !ow(c) &&  re(c) && !rs(c)).length;
-  const resaleOnly   = linkedC.filter(c => !ow(c) && !re(c) &&  rs(c)).length;
-  const ownerRenter  = linkedC.filter(c =>  ow(c) &&  re(c) && !rs(c)).length;
-  const ownerResale  = linkedC.filter(c =>  ow(c) && !re(c) &&  rs(c)).length;
-  const renterResale = linkedC.filter(c => !ow(c) &&  re(c) &&  rs(c)).length;
-  const allThreeCount= linkedC.filter(c =>  ow(c) &&  re(c) &&  rs(c)).length;
+  const ownerOnly    = customers.filter(c =>  ow(c) && !re(c) && !rs(c)).length;
+  const renterOnly   = customers.filter(c => !ow(c) &&  re(c) && !rs(c)).length;
+  const resaleOnly   = customers.filter(c => !ow(c) && !re(c) &&  rs(c)).length;
+  const ownerRenter  = customers.filter(c =>  ow(c) &&  re(c) && !rs(c)).length;
+  const ownerResale  = customers.filter(c =>  ow(c) && !re(c) &&  rs(c)).length;
+  const renterResale = customers.filter(c => !ow(c) &&  re(c) &&  rs(c)).length;
+  const allThreeCount= customers.filter(c =>  ow(c) &&  re(c) &&  rs(c)).length;
 
   const vennEl = document.getElementById('chart-identity-venn');
   vennEl.innerHTML = '';
@@ -815,6 +814,12 @@ function renderIdentityCharts(customers) {
       },
       plugins: {
         legend: { display:true, position:'bottom', labels:{ boxWidth:12, font:{size:10} } },
+        tooltip: {
+          callbacks: {
+            title: (items) => items[0]?.dataset?.label || '',
+            label: (ctx) => `CLV: $${Math.round(ctx.parsed.y).toLocaleString()}`,
+          },
+        },
       },
     },
   });
